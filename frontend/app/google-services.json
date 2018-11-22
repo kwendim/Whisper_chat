@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "912906530622",
+    "firebase_url": "https://mccchattest.firebaseio.com",
+    "project_id": "mccchattest",
+    "storage_bucket": "mccchattest.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912906530622:android:60393cd04209e2a9",
+        "android_client_info": {
+          "package_name": "assignments.mmoneer71.mcc_project_g15"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "912906530622-hhgdvoau648a4traqhlkvgdrv9lenhpf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "assignments.mmoneer71.mcc_project_g15",
+            "certificate_hash": "c222a89408ff3ee24ade4f36208a44d1b6a3f427"
+          }
+        },
+        {
+          "client_id": "912906530622-jligdmmr9uf97rsucmm63mk3pfjnels5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDkkvwEH3HYJJ9kIBeJHaFYjp6ukEmWwc"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "912906530622-jligdmmr9uf97rsucmm63mk3pfjnels5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

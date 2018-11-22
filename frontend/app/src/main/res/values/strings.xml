@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">mcc-project-g15</string>
+    <string name="hint_enter_a_message">Type Message</string>
+
+    <string-array name="view_types_dialog">
+        <item name="gallery">Gallery</item>
+        <item name="camera">Camera</item>
+    </string-array>
 </resources>
