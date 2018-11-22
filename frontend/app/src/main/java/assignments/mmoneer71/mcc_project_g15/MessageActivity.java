@@ -4,9 +4,11 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -31,7 +33,11 @@ import com.stfalcon.chatkit.messages.MessageInput;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 public class MessageActivity extends AppCompatActivity {
@@ -40,11 +46,13 @@ public class MessageActivity extends AppCompatActivity {
     private static final String CHAT_ID = "chat_id";
     private static final String USER_ID = "user_id_2";
     private static int REQUEST_IMAGE = 1;
-    private static int REQUEST_IMAGE_CAPTURE = 2;
+    private static int REQUEST_TAKE_PHOTO = 2;
     final Author kidus = new Author(USER_ID,"kidus","meavatar");
-      DatabaseReference myRef;
-     FirebaseDatabase database;
+    DatabaseReference myRef;
+    FirebaseDatabase database;
     private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
+    String mCurrentPhotoPath;
+    Uri photoURI;
 
 
 
@@ -53,11 +61,11 @@ public class MessageActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == REQUEST_IMAGE || requestCode == REQUEST_IMAGE_CAPTURE) {
+        if (requestCode == REQUEST_IMAGE ) {
             if (resultCode == RESULT_OK) {
                 if (data != null) {
                     final Uri uri = data.getData();
-                    Log.d(TAG, "Uri: " + uri.toString());
+                    Log.d(TAG, "Uri: " + uri.getLastPathSegment().toString());
 
                     Message tempMessage = new Message(USER_ID, kidus, null);
                     Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
@@ -72,7 +80,7 @@ public class MessageActivity extends AppCompatActivity {
                                         String key = databaseReference.getKey();
                                         StorageReference storageReference =
                                                 FirebaseStorage.getInstance()
-                                                        .getReference("user_id_2")
+                                                        .getReference("chats")
                                                         .child(key)
                                                         .child(uri.getLastPathSegment());
                                         Log.d("putImage", "about to be called: " + key );
@@ -86,6 +94,45 @@ public class MessageActivity extends AppCompatActivity {
                             });
                 }
             }
+        } else  if (requestCode == REQUEST_TAKE_PHOTO){
+            Log.d("madeit", "look mamma, i made it");
+            if (resultCode == RESULT_OK) {
+                final Uri uri = photoURI;
+                Log.d(TAG, "Uri: " + uri.getLastPathSegment());
+
+                Message tempMessage = new Message(USER_ID, kidus, null);
+                Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
+                tempMessage.setImage(new_img);
+
+                myRef.push()
+                        .setValue(tempMessage, new DatabaseReference.CompletionListener() {
+                            @Override
+                            public void onComplete(DatabaseError databaseError,
+                                                   DatabaseReference databaseReference) {
+                                if (databaseError == null) {
+                                    String key = databaseReference.getKey();
+                                    StorageReference storageReference =
+                                            FirebaseStorage.getInstance()
+                                                    .getReference("chats")
+                                                    .child(key)
+                                                    .child(uri.getLastPathSegment());
+                                    Log.d("putImage", "about to be called: " + key );
+
+                                    putImageInStorage(storageReference, uri, key);
+                                } else {
+                                    Log.w(TAG, "Unable to write message to database.",
+                                            databaseError.toException());
+                                }
+                            }
+                        });
+
+
+
+
+
+
+            }
+
         }
     }
 
@@ -183,8 +230,26 @@ public class MessageActivity extends AppCompatActivity {
                                 }
                                 else {
                                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+                                    // Ensure that there's a camera activity to handle the intent
                                     if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                                        startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+                                        // Create the File where the photo should go
+                                        File photoFile = null;
+                                        try {
+                                            photoFile = createImageFile();
+                                        } catch (IOException ex) {
+                                            // Error occurred while creating the File
+
+                                        }
+                                        // Continue only if the File was successfully created
+                                        if (photoFile != null) {
+                                            photoURI = FileProvider.getUriForFile(MessageActivity.this,
+                                                    "assignments.mmoneer71.mcc_project_g15.fileprovider",
+                                                    photoFile);
+                                            Log.d("photouri", photoURI.toString());
+                                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                                            startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                                        }
                                     }
 
                                 }
@@ -198,27 +263,7 @@ public class MessageActivity extends AppCompatActivity {
         });
     }
 
-//    private void putImageInStorage(StorageReference storageReference, Uri uri, final String key) {
-//        storageReference.putFile(uri).addOnCompleteListener(MessageActivity.this,
-//                new OnCompleteListener<UploadTask.TaskSnapshot>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-//                        if (task.isSuccessful()) {
-//                            Message.Image up_img= new Message.Image(task.getResult().getMetadata().getReference().getDownloadUrl().getResult().toString());
-//                            Log.d("imageurl", task.getResult().getMetadata().getReference().getDownloadUrl().getResult().toString());
-//                            Message friendlyMessage =
-//                                    new Message(USER_ID, kidus, null);
-//                            friendlyMessage.setImage(up_img);
-//                            myRef.child(key)
-//                                    .setValue(friendlyMessage);
 
-//                        } else {
-//                            Log.w(TAG, "Image upload task was not successful.",
-//                                    task.getException());
-//                        }
-//                    }
-//                });
-//    }
 private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
 
     UploadTask uploadTask = storageReference.putFile(uri);
@@ -253,5 +298,22 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
 
             });
 }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        mCurrentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
 
 }
