@@ -6,4 +6,5 @@
         <item name="gallery">Gallery</item>
         <item name="camera">Camera</item>
     </string-array>
+    <string name="title_activity_main">MainActivity</string>
 </resources>

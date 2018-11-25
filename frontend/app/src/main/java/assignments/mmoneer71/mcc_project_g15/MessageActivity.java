@@ -11,7 +11,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.ImageView;
 
 import com.google.android.gms.tasks.Continuation;
@@ -53,7 +56,6 @@ public class MessageActivity extends AppCompatActivity {
     private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
     String mCurrentPhotoPath;
     Uri photoURI;
-
 
 
 
@@ -126,11 +128,6 @@ public class MessageActivity extends AppCompatActivity {
                             }
                         });
 
-
-
-
-
-
             }
 
         }
@@ -140,9 +137,19 @@ public class MessageActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chat_interface);
+        setContentView(R.layout.activity_messages);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-         database = FirebaseDatabase.getInstance();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Main Page");
+        }
+        toolbar.setSubtitle("Test Subtitle");
+        toolbar.inflateMenu(R.menu.menu_message);
+
+
+
+        database = FirebaseDatabase.getInstance();
         myRef = database.getReference().child("chat_msgs").child(CHAT_ID);
 
         final Author zee = new Author("user_id_reply","Zee","zee's Avatar");
@@ -164,6 +171,8 @@ public class MessageActivity extends AppCompatActivity {
         MessagesList messagesList = findViewById(R.id.messagesList);
         messagesList.setAdapter(adapter);
 
+
+//TODO: HANDLE NEW CHATS WITH THIS EVENT LISTENER
         myRef.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
@@ -177,14 +186,17 @@ public class MessageActivity extends AppCompatActivity {
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String prevChildKey) {
-                Log.d("onchildchanged","hasbeencalled");
-                Message new_message = dataSnapshot.getValue(Message.class);
-                Author new_author = dataSnapshot.child("user").getValue(Author.class);
-                new_message.setUser(new_author);
-                Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
-                new_message.setImage(new_image);
-                Log.d("boutotloadimage: " , "right here + " + prevChildKey);
-                adapter.update(new_message);            }
+                if (dataSnapshot.hasChildren()) {
+                    Log.d("onchildchanged", "hasbeencalled");
+                    Message new_message = dataSnapshot.getValue(Message.class);
+                    Author new_author = dataSnapshot.child("user").getValue(Author.class);
+                    new_message.setUser(new_author);
+                    Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
+                    new_message.setImage(new_image);
+                    Log.d("boutotloadimage: ", "right here + " + prevChildKey);
+                    adapter.update(new_message);
+                }
+            }
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {}
@@ -261,6 +273,40 @@ public class MessageActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_message, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.menu_gallery) {
+          //  logoutUser();
+            Log.d("Menu_Item", "Gallery");
+            Intent myIntent = new Intent(this, GalleryActivity.class);
+            //myIntent.putExtra("key", value); //Optional parameters
+            startActivity(myIntent);
+            return true;
+        } else if (id == R.id.menu_addMember) {
+            //  logoutUser();
+            Log.d("menu Item", "Add Member");
+            return true;
+        } else if (id == R.id.menu_leaveChat){
+            Log.d("Menu_item", "leave chat");
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
 
