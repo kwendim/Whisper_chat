@@ -7,4 +7,5 @@
         <item name="camera">Camera</item>
     </string-array>
     <string name="title_activity_search_users">SearchUsersActivity</string>
+    <string name="title_activity_main">MainActivity</string>
 </resources>

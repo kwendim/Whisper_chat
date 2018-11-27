@@ -3,16 +3,14 @@ package mcc_2018_g15.chatapp;
 import android.support.annotation.Nullable;
 
 import com.google.firebase.database.Exclude;
+import com.google.firebase.database.PropertyName;
 import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.commons.models.MessageContentType;
 
 import java.io.Serializable;
 import java.util.Date;
 
-import mcc_2018_g15.chatapp.Author;
-
 public class Message implements IMessage,MessageContentType.Image {
-
 
     public String id;
 

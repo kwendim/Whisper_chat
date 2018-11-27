@@ -10,16 +10,9 @@ public class Author implements Serializable,IUser {
     private String id;
     private String name;
     private String avatar;
-    private boolean online;
+    //private boolean online;
 
     public Author(){}
-
-    public Author(String id, String name, String avatar, boolean online) {
-        this.id = id;
-        this.name = name;
-        this.avatar = avatar;
-        this.online = online;
-    }
 
     public Author(String id, String name, String avatar) {
         this.id = id;
