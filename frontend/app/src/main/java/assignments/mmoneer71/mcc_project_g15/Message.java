@@ -3,6 +3,7 @@ package assignments.mmoneer71.mcc_project_g15;
 import android.support.annotation.Nullable;
 
 import com.google.firebase.database.Exclude;
+import com.google.firebase.database.PropertyName;
 import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.commons.models.MessageContentType;
 
@@ -10,7 +11,6 @@ import java.io.Serializable;
 import java.util.Date;
 
 public class Message implements IMessage,MessageContentType.Image {
-
 
     public String id;
 

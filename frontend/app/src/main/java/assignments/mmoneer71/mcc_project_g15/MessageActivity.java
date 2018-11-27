@@ -16,19 +16,20 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 import com.stfalcon.chatkit.commons.ImageLoader;
@@ -38,7 +39,6 @@ import com.stfalcon.chatkit.messages.MessagesListAdapter;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -46,14 +46,15 @@ import java.util.Date;
 public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
-    private static final String CHAT_ID = "chat_id";
+    private static final String CHAT_ID = "-LSAJSxZlW6W1Mw5Jd2y";
     private static final String USER_ID = "user_id_2";
     private static int REQUEST_IMAGE = 1;
     private static int REQUEST_TAKE_PHOTO = 2;
     final Author kidus = new Author(USER_ID,"kidus","meavatar");
     DatabaseReference myRef;
     FirebaseDatabase database;
-    private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
+    //private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
+    private static final String LOADING_IMAGE_URL = "https://giphy.com/gifs/mashable-3oEjI6SIIHBdRxXI40";
     String mCurrentPhotoPath;
     Uri photoURI;
 
@@ -63,72 +64,17 @@ public class MessageActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == REQUEST_IMAGE ) {
-            if (resultCode == RESULT_OK) {
+        if (requestCode == REQUEST_IMAGE && resultCode == RESULT_OK ) {
                 if (data != null) {
                     final Uri uri = data.getData();
                     Log.d(TAG, "Uri: " + uri.getLastPathSegment().toString());
+                    storeTemporaryImage(myRef,uri);
 
-                    Message tempMessage = new Message(USER_ID, kidus, null);
-                    Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
-                    tempMessage.setImage(new_img);
-
-                    myRef.push()
-                            .setValue(tempMessage, new DatabaseReference.CompletionListener() {
-                                @Override
-                                public void onComplete(DatabaseError databaseError,
-                                                       DatabaseReference databaseReference) {
-                                    if (databaseError == null) {
-                                        String key = databaseReference.getKey();
-                                        StorageReference storageReference =
-                                                FirebaseStorage.getInstance()
-                                                        .getReference("chats")
-                                                        .child(key)
-                                                        .child(uri.getLastPathSegment());
-                                        Log.d("putImage", "about to be called: " + key );
-
-                                        putImageInStorage(storageReference, uri, key);
-                                    } else {
-                                        Log.w(TAG, "Unable to write message to database.",
-                                                databaseError.toException());
-                                    }
-                                }
-                            });
                 }
-            }
-        } else  if (requestCode == REQUEST_TAKE_PHOTO){
-            Log.d("madeit", "look mamma, i made it");
-            if (resultCode == RESULT_OK) {
+        } else  if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK){
                 final Uri uri = photoURI;
                 Log.d(TAG, "Uri: " + uri.getLastPathSegment());
-
-                Message tempMessage = new Message(USER_ID, kidus, null);
-                Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
-                tempMessage.setImage(new_img);
-
-                myRef.push()
-                        .setValue(tempMessage, new DatabaseReference.CompletionListener() {
-                            @Override
-                            public void onComplete(DatabaseError databaseError,
-                                                   DatabaseReference databaseReference) {
-                                if (databaseError == null) {
-                                    String key = databaseReference.getKey();
-                                    StorageReference storageReference =
-                                            FirebaseStorage.getInstance()
-                                                    .getReference("chats")
-                                                    .child(key)
-                                                    .child(uri.getLastPathSegment());
-                                    Log.d("putImage", "about to be called: " + key );
-
-                                    putImageInStorage(storageReference, uri, key);
-                                } else {
-                                    Log.w(TAG, "Unable to write message to database.",
-                                            databaseError.toException());
-                                }
-                            }
-                        });
-
-            }
+                storeTemporaryImage(myRef,uri);
 
         }
     }
@@ -150,6 +96,7 @@ public class MessageActivity extends AppCompatActivity {
 
 
         database = FirebaseDatabase.getInstance();
+        //TODO: Set to custom chat_id or make .push for new chat
         myRef = database.getReference().child("chat_msgs").child(CHAT_ID);
 
         final Author zee = new Author("user_id_reply","Zee","zee's Avatar");
@@ -158,7 +105,14 @@ public class MessageActivity extends AppCompatActivity {
         ImageLoader imageLoader = new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, @Nullable String url, @Nullable Object payload) {
-                Picasso.get().load(url).into(imageView);
+                if (url == LOADING_IMAGE_URL){
+                    Glide.with(MessageActivity.this)
+                            .load(url)
+                            .into(imageView);
+
+                }
+                Glide.with(MessageActivity.this).load(url).into(imageView);
+
 
             }
 
@@ -308,7 +262,36 @@ public class MessageActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+private void storeTemporaryImage(final DatabaseReference dbReference,final Uri uri){
+    Message tempMessage = new Message(USER_ID, kidus, null);
+    Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
+    tempMessage.setImage(new_img);
 
+    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    final String imageFileName = "IMG_" + timeStamp ;
+
+
+    dbReference.push()
+            .setValue(tempMessage, new DatabaseReference.CompletionListener() {
+                @Override
+                public void onComplete(DatabaseError databaseError,
+                                       DatabaseReference databaseReference) {
+                    if (databaseError == null) {
+                        String key = databaseReference.getKey();
+                        StorageReference storageReference =
+                                FirebaseStorage.getInstance()
+                                        .getReference("chats")
+                                        .child(CHAT_ID)
+                                        .child(imageFileName);
+                        Log.d("putImage", "about to be called: " + key );
+                        putImageInStorage(storageReference, uri, key);
+                    } else {
+                        Log.w(TAG, "Unable to write message to database.",
+                                databaseError.toException());
+                    }
+                }
+            });
+}
 
 private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
 
@@ -321,19 +304,33 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
             }
 
             // Continue with the task to get the download URL
+
             return storageReference.getDownloadUrl();
         }
     }).addOnCompleteListener(new OnCompleteListener<Uri>() {
         @Override
         public void onComplete(@NonNull Task<Uri> task) {
             if (task.isSuccessful()) {
-                Uri downloadUri = task.getResult();
+                final Uri downloadUri = task.getResult();
                 Message.Image up_img= new Message.Image(downloadUri.toString());
-                Message friendlyMessage =
+                Message message_update =
                         new Message(USER_ID, kidus, null);
-                friendlyMessage.setImage(up_img);
+                message_update.setImage(up_img);
                 myRef.child(key)
-                        .setValue(friendlyMessage);
+                        .setValue(message_update);
+
+//                SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.US);
+//                Date now = new Date();
+//                String fileName = formatter.format(now) + ".tar.gz";
+                //TODO: Remove this part right here
+                final DatabaseReference imageurls = FirebaseDatabase.getInstance().getReference("imageursl");
+                imageurls.child(CHAT_ID).child(key).setValue(downloadUri.toString()).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e("imageurlFailure", e.toString());
+                    }
+                });
+
                 Log.d("downloadURI?" , downloadUri.toString());
             } else {
                 // Handle failures
@@ -348,17 +345,29 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        String imageFileName = "IMG_" + timeStamp ;
+        Log.d("timestamp", timeStamp);
+        Log.d("dateee", new Date().toString());
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
+        Log.d("storagedir", storageDir.toString() );
+        try {
+            File image = new File(storageDir.toString() + "/" + imageFileName + ".jpg");
+            image.createNewFile();
+            mCurrentPhotoPath = image.getAbsolutePath();
+            return image;
+        }catch (Exception e ){
+            Log.e("fileException", e.toString());
+            return null;
+        }
+
+//
+//        File image = File.createTempFile(
+//                imageFileName,  /* prefix */
+//                ".jpg",storageDir        /* suffix */
+//        );
 
         // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = image.getAbsolutePath();
-        return image;
+
     }
 
 

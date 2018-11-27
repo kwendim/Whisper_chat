@@ -33,10 +33,12 @@ public class GalleryGridAdapter extends BaseAdapter {
 
         if (convertView == null) {
 
+
             gridView = new View(context);
 
             // get layout from mobile.xml
             gridView = inflater.inflate(R.layout.content_gallery, null);
+
 
 
             // set image based on selected text
@@ -65,7 +67,7 @@ public class GalleryGridAdapter extends BaseAdapter {
         } else {
             gridView = (View) convertView;
         }
-
+        Log.d("grid view", "has returned");
         return gridView;
     }
 
