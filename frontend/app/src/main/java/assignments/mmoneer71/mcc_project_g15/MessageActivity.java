@@ -3,6 +3,7 @@ package assignments.mmoneer71.mcc_project_g15;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -16,9 +17,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -42,19 +43,18 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-
+//TODO: implement name/image along with each message
 public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
     private static final String CHAT_ID = "-LSAJSxZlW6W1Mw5Jd2y";
-    private static final String USER_ID = "user_id_2";
+    private static final String USER_ID = "user_id_1";
     private static int REQUEST_IMAGE = 1;
     private static int REQUEST_TAKE_PHOTO = 2;
-    final Author kidus = new Author(USER_ID,"kidus","meavatar");
+    final Author author = new Author(USER_ID,"Kidus","meavatar");
     DatabaseReference myRef;
     FirebaseDatabase database;
-    //private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
-    private static final String LOADING_IMAGE_URL = "https://giphy.com/gifs/mashable-3oEjI6SIIHBdRxXI40";
+    private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
     String mCurrentPhotoPath;
     Uri photoURI;
 
@@ -84,6 +84,10 @@ public class MessageActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messages);
+
+
+
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -99,28 +103,23 @@ public class MessageActivity extends AppCompatActivity {
         //TODO: Set to custom chat_id or make .push for new chat
         myRef = database.getReference().child("chat_msgs").child(CHAT_ID);
 
-        final Author zee = new Author("user_id_reply","Zee","zee's Avatar");
-
 
         ImageLoader imageLoader = new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, @Nullable String url, @Nullable Object payload) {
                 if (url == LOADING_IMAGE_URL){
-                    Glide.with(MessageActivity.this)
-                            .load(url)
-                            .into(imageView);
+                    Picasso.get().load(LOADING_IMAGE_URL).into(imageView);
 
                 }
-                Glide.with(MessageActivity.this).load(url).into(imageView);
-
-
+                Glide.with(imageView.getContext()).load(url).into(imageView);
+                //Picasso.get().load(url).into(imageView);
             }
 
         };
 
 
         MessageInput inputView = (MessageInput) findViewById(R.id.input);
-        final MessagesListAdapter<Message> adapter = new MessagesListAdapter<>(kidus.getId(), imageLoader);
+        final MessagesListAdapter<Message> adapter = new MessagesListAdapter<>(author.getId(), imageLoader);
 
         MessagesList messagesList = findViewById(R.id.messagesList);
         messagesList.setAdapter(adapter);
@@ -171,10 +170,10 @@ public class MessageActivity extends AppCompatActivity {
             public boolean onSubmit(CharSequence input) {
                 //validate and send message
 
-                Message message = new Message(USER_ID, kidus, input.toString() );
-                Message rep_message = new Message("user_replier", zee, input.toString() + "'s reply");
+                Message message = new Message(USER_ID, author, input.toString() );
+                //Message rep_message = new Message("user_replier", zee, input.toString() + "'s reply");
                 myRef.push().setValue(message);
-                myRef.push().setValue(rep_message);
+               // myRef.push().setValue(rep_message);
 
                 return true;
             }
@@ -263,7 +262,7 @@ public class MessageActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 private void storeTemporaryImage(final DatabaseReference dbReference,final Uri uri){
-    Message tempMessage = new Message(USER_ID, kidus, null);
+    Message tempMessage = new Message(USER_ID, author, null);
     Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
     tempMessage.setImage(new_img);
 
@@ -314,7 +313,7 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
                 final Uri downloadUri = task.getResult();
                 Message.Image up_img= new Message.Image(downloadUri.toString());
                 Message message_update =
-                        new Message(USER_ID, kidus, null);
+                        new Message(USER_ID, author, null);
                 message_update.setImage(up_img);
                 myRef.child(key)
                         .setValue(message_update);
