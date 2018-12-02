@@ -35,6 +35,11 @@ public class Author implements Serializable,IUser {
         return avatar;
     }
 
+
+    public Boolean isBoolean() {
+        return true;
+    }
+
     @Override
     public String toString() {
         return "Author [id=" + id + ", name=" + name
