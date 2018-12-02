@@ -1,4 +1,4 @@
-package assignments.mmoneer71.mcc_project_g15.holders;
+package mcc_2018_g15.chatapp.holders;
 
 import android.view.View;
 import android.widget.TextView;
@@ -7,9 +7,8 @@ import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.messages.MessageHolders.IncomingTextMessageViewHolder;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 
-import assignments.mmoneer71.mcc_project_g15.Message;
-import assignments.mmoneer71.mcc_project_g15.R;
-
+import mcc_2018_g15.chatapp.Message;
+import mcc_2018_g15.chatapp.R;
 public class CustomIncomingTextMessageViewHolder extends MessageHolders.IncomingTextMessageViewHolder<Message> {
     private View onlineIndicator;
     private TextView username;

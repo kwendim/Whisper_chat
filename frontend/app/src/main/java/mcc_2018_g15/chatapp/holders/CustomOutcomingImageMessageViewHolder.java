@@ -1,12 +1,11 @@
-package assignments.mmoneer71.mcc_project_g15.holders;
+package mcc_2018_g15.chatapp.holders;
 
 import android.util.Pair;
 import android.view.View;
 
 import com.stfalcon.chatkit.messages.MessageHolders;
 
-import assignments.mmoneer71.mcc_project_g15.Message;
-
+import mcc_2018_g15.chatapp.Message;
 /*
  * Created by troy379 on 05.04.17.
  */

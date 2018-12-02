@@ -45,10 +45,11 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import assignments.mmoneer71.mcc_project_g15.holders.CustomIncomingImageMessageViewHolder;
-import assignments.mmoneer71.mcc_project_g15.holders.CustomIncomingTextMessageViewHolder;
-import assignments.mmoneer71.mcc_project_g15.holders.CustomOutcomingImageMessageViewHolder;
-import assignments.mmoneer71.mcc_project_g15.holders.CustomOutcomingTextMessageViewHolder;
+import mcc_2018_g15.chatapp.holders.CustomIncomingImageMessageViewHolder;
+import mcc_2018_g15.chatapp.holders.CustomIncomingTextMessageViewHolder;
+import mcc_2018_g15.chatapp.holders.CustomOutcomingImageMessageViewHolder;
+import mcc_2018_g15.chatapp.holders.CustomOutcomingTextMessageViewHolder;
+
 
 //TODO: implement name/image along with each message
 public class MessageActivity extends AppCompatActivity {

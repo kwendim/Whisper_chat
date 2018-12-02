@@ -1,10 +1,11 @@
-package assignments.mmoneer71.mcc_project_g15.holders;
+package mcc_2018_g15.chatapp.holders;
 
 import android.view.View;
 
 import com.stfalcon.chatkit.messages.MessageHolders;
 
-import assignments.mmoneer71.mcc_project_g15.Message;
+import mcc_2018_g15.chatapp.Message;
+import mcc_2018_g15.chatapp.R;
 
 public class CustomOutcomingTextMessageViewHolder
         extends MessageHolders.OutcomingTextMessageViewHolder<Message> {
