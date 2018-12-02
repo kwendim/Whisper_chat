@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -34,6 +35,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 import com.stfalcon.chatkit.commons.ImageLoader;
+import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.messages.MessageInput;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
@@ -43,6 +45,11 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import assignments.mmoneer71.mcc_project_g15.holders.CustomIncomingImageMessageViewHolder;
+import assignments.mmoneer71.mcc_project_g15.holders.CustomIncomingTextMessageViewHolder;
+import assignments.mmoneer71.mcc_project_g15.holders.CustomOutcomingImageMessageViewHolder;
+import assignments.mmoneer71.mcc_project_g15.holders.CustomOutcomingTextMessageViewHolder;
+
 //TODO: implement name/image along with each message
 public class MessageActivity extends AppCompatActivity {
 
@@ -51,7 +58,7 @@ public class MessageActivity extends AppCompatActivity {
     private static final String USER_ID = "user_id_1";
     private static int REQUEST_IMAGE = 1;
     private static int REQUEST_TAKE_PHOTO = 2;
-    final Author author = new Author(USER_ID,"Kidus","meavatar");
+    final Author author = new Author(USER_ID,"kidus","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
     DatabaseReference myRef;
     FirebaseDatabase database;
     private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
@@ -118,14 +125,40 @@ public class MessageActivity extends AppCompatActivity {
         };
 
 
-        MessageInput inputView = (MessageInput) findViewById(R.id.input);
-        final MessagesListAdapter<Message> adapter = new MessagesListAdapter<>(author.getId(), imageLoader);
-
         MessagesList messagesList = findViewById(R.id.messagesList);
+
+        CustomIncomingTextMessageViewHolder.Payload payload = new CustomIncomingTextMessageViewHolder.Payload();
+        payload.avatarClickListener = new CustomIncomingTextMessageViewHolder.OnAvatarClickListener() {
+            @Override
+            public void onAvatarClick() {
+                Toast.makeText(MessageActivity.this,
+                        "Text message avatar clicked", Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        MessageHolders holdersConfig = new MessageHolders()
+                .setIncomingTextConfig(
+                        CustomIncomingTextMessageViewHolder.class,
+                        R.layout.custom_incoming_text_view_holder,
+                        payload).setOutcomingTextConfig(
+                        CustomOutcomingTextMessageViewHolder.class,
+                        R.layout.item_custom_outcoming_text_message)
+                .setIncomingImageConfig(
+                        CustomIncomingImageMessageViewHolder.class,
+                        R.layout.item_custom_incoming_image_message)
+                .setOutcomingImageConfig(
+                        CustomOutcomingImageMessageViewHolder.class,
+                        R.layout.item_custom_outcoming_image_message);
+
+        MessageInput inputView = (MessageInput) findViewById(R.id.input);
+        final MessagesListAdapter<Message> adapter = new MessagesListAdapter<>(author.getId(),holdersConfig, imageLoader);
+
         messagesList.setAdapter(adapter);
 
 
-//TODO: HANDLE NEW CHATS WITH THIS EVENT LISTENER
+
+//TODO: HANDLE NEW CHATS WITH THIS EVENT LISTENER.
+        //TODO: get authors from the user table
         myRef.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
