@@ -22,10 +22,15 @@ import android.os.Bundle;
     import com.google.firebase.storage.StorageReference;
     import com.stfalcon.frescoimageviewer.ImageViewer;
 
+    import java.text.SimpleDateFormat;
     import java.util.ArrayList;
+    import java.util.Date;
+    import java.util.HashMap;
     import java.util.List;
+    import java.util.Map;
 
-//TODO: Orientation change closes the viewer. Back Button for view. Implement Download of images. (Maybe) Ability to navigate through all images when opening one.
+//TODO: Orientation change closes the viewer. Back Button for view. Implement Download of images. (Maybe) Ability to navigate
+// through all images when opening one.
 //TODO: It takes a long time to load the images
 public class GalleryActivity extends AppCompatActivity {
     String samp_img_url= "https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_205836?alt=media&token=1198961b-ac0d-4ec9-9029-3edb5f86dc77";
@@ -64,8 +69,8 @@ public class GalleryActivity extends AppCompatActivity {
 //
 //        GridView gridView = (GridView) findViewById(R.id.gridView);
 //        gridView.setAdapter(new GalleryGridAdapter(GalleryActivity.this,imageurl));
-    setUpRecyclerView();
-    populateRecyclerView();
+        setUpRecyclerView();
+        getAllImages();
 
 
 
@@ -81,39 +86,66 @@ public class GalleryActivity extends AppCompatActivity {
     }
 
     //populate recycler view
-    private void populateRecyclerView() {
-        getAllImages();
-        ArrayList<SectionModel> sectionModelArrayList = new ArrayList<>();
-        //for loop for sections
-
-        StorageReference storage =  FirebaseStorage.getInstance().getReference("chats");
-        Log.d("storage url ", String.valueOf(storage.getDownloadUrl()));
-        for (int i = 1; i <= 5; i++) {
-            ArrayList<String> itemArrayList = new ArrayList<>();
-            //for loop for items
-            for (int j = 1; j <= 10; j++) {
-                itemArrayList.add(samp_img_url);
-            }
-
-            //add the section and items to array list
-            sectionModelArrayList.add(new SectionModel("Section " + i, itemArrayList));
+    private void populateRecyclerView(Map<String, ArrayList<String>> sorted_data) {
+        ArrayList<SectionModel> sections = new ArrayList<>();
+        for (Map.Entry<String, ArrayList<String>> entry : sorted_data.entrySet()) {
+            sections.add(new SectionModel(entry.getKey(),entry.getValue()));
         }
-
-        SectionedGalleryRecyclerAdapter adapter = new SectionedGalleryRecyclerAdapter(this, sectionModelArrayList);
+        SectionedGalleryRecyclerAdapter adapter = new SectionedGalleryRecyclerAdapter(GalleryActivity.this, sections);
         galleryRecycler.setAdapter(adapter);
     }
 
 
+//    private void getAllImages(){
+//        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID);
+//
+//        imagesRef.addValueEventListener(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(DataSnapshot snapshot) {
+//                Log.e("Count " ,""+snapshot.getChildrenCount());
+//                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+//                    Log.d("imgges", postSnapshot.toString());
+//                }
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//                Log.e("The read failed: " ,databaseError.getMessage());
+//
+//            }
+//
+//
+//        });
+//    }
+
     private void getAllImages(){
-        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("imagesurl").child(CHAT_ID);
+        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID);
+        final Map<String,ArrayList<String>> date_sorter = new HashMap<>();
+
 
         imagesRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
+
                 Log.e("Count " ,""+snapshot.getChildrenCount());
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
-                    Log.d("imgges", postSnapshot.toString());
+                    if(postSnapshot.hasChild("imageurl")){
+                        String image_date = new SimpleDateFormat("yyyyMMdd").format(postSnapshot.child("createdAt").getValue(Date.class));
+                        String image_path = postSnapshot.child("imageurl").child("url").getValue(String.class);
+                        if(date_sorter.get(image_date)==null){
+                            ArrayList<String> new_element = new ArrayList<>();
+                            new_element.add(image_path);
+                            date_sorter.put(image_date,new_element);
+                        }
+                        else {
+                            date_sorter.get(image_date).add(image_path);
+                        }
+
+                        Log.d("haschild", date_sorter.toString());
+                    }
                 }
+                populateRecyclerView(date_sorter);
+
             }
 
             @Override
