@@ -1,11 +1,15 @@
 package mcc_2018_g15.chatapp;
 
+    import android.content.Intent;
     import android.support.annotation.NonNull;
     import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
     import android.support.v7.widget.LinearLayoutManager;
     import android.support.v7.widget.RecyclerView;
+    import android.support.v7.widget.Toolbar;
     import android.util.Log;
+    import android.view.Menu;
+    import android.view.MenuItem;
     import android.view.View;
     import android.widget.GridView;
 
@@ -43,16 +47,16 @@ public class GalleryActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gallery_recycler);
-//
-//
-//        RecyclerView galleryRecycler = (RecyclerView) findViewById(R.id.recycler);
-//        String[] imageurl = new String[]{samp_img_url,LOADING_IMAGE_URL,samp_img_url,samp_img_url,LOADING_IMAGE_URL,samp_img_url,samp_img_url,samp_img_url,LOADING_IMAGE_URL,samp_img_url};
-//
-//        GalleryRecyclerViewAdapter adapter = new GalleryRecyclerViewAdapter(new String[]{"hello"});
-//        galleryRecycler.setAdapter(adapter);
-//
-//        galleryRecycler.setLayoutManager(new LinearLayoutManager(this));
-//
+
+
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.gallery_toolbar);
+        setSupportActionBar(toolbar);
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Main Page");
+        }
+        toolbar.inflateMenu(R.menu.menu_gallery);
 
 
         ImagePipelineConfig config = ImagePipelineConfig.newBuilder(this)
@@ -62,21 +66,44 @@ public class GalleryActivity extends AppCompatActivity {
                 .build();
         Fresco.initialize(GalleryActivity.this,config);
         Log.d("fresco", "initialized");
-//
-//        setContentView(R.layout.activity_gallery);
-//        String[] imageurl = new String[]{samp_img_url,LOADING_IMAGE_URL,samp_img_url,samp_img_url,LOADING_IMAGE_URL,samp_img_url,samp_img_url,samp_img_url,LOADING_IMAGE_URL,samp_img_url};
-//
-//
-//        GridView gridView = (GridView) findViewById(R.id.gridView);
-//        gridView.setAdapter(new GalleryGridAdapter(GalleryActivity.this,imageurl));
+
         setUpRecyclerView();
         getAllImages();
-
-
-
-
-
     }
+
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_gallery, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.menu_date) {
+            Log.d("Gallery_Menu", "sort by date");
+            return true;
+        } else if (id == R.id.menu_user) {
+            Log.d("Gallery_menu", "sort by user");
+            return true;
+        } else if (id == R.id.menu_label){
+            Log.d("Galler_menu", "sort by label");
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+
+
 
     private void setUpRecyclerView() {
         galleryRecycler = (RecyclerView) findViewById(R.id.recycler);
@@ -95,28 +122,6 @@ public class GalleryActivity extends AppCompatActivity {
         galleryRecycler.setAdapter(adapter);
     }
 
-
-//    private void getAllImages(){
-//        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID);
-//
-//        imagesRef.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(DataSnapshot snapshot) {
-//                Log.e("Count " ,""+snapshot.getChildrenCount());
-//                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
-//                    Log.d("imgges", postSnapshot.toString());
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//                Log.e("The read failed: " ,databaseError.getMessage());
-//
-//            }
-//
-//
-//        });
-//    }
 
     private void getAllImages(){
         DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID);
