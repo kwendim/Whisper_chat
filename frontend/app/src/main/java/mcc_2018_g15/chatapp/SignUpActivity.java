@@ -17,7 +17,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -45,10 +44,9 @@ public class SignUpActivity extends AppCompatActivity {
     public static final int PICK_IMAGE = 1;
 
 
-    //defining firebaseauth object
     private FirebaseAuth firebaseAuth;
     private DatabaseReference usersRef;
-    private Uri uploadedAvatarUri, orgAvatarUri;
+    private Uri orgAvatarUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
