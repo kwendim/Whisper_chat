@@ -274,11 +274,6 @@ public class GalleryActivity extends AppCompatActivity {
         final List<ArrayList<String>> images_list = new ArrayList<>(image_sorter.values());
         final Map<String,ArrayList<String>> resorted = new HashMap<>();
 
-
-
-
-
-
     }
 
     private void getAllImages_label() {
