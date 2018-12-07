@@ -19,8 +19,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -42,7 +40,7 @@ public class SignUpActivity extends AppCompatActivity {
     private EditText editTextEmail, editTextPassword, editTextConfirmPassword, editTextUsername;
     private ImageView imageViewAvatar;
     private ProgressDialog progressDialog;
-    public static final int PICK_IMAGE = 1;
+    private static final int PICK_IMAGE = 1;
 
 
     private FirebaseAuth firebaseAuth;
