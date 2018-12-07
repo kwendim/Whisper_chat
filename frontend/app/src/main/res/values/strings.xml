@@ -8,4 +8,5 @@
     </string-array>
     <string name="title_activity_search_users">SearchUsersActivity</string>
     <string name="title_activity_main">MainActivity</string>
+    <string name="user_registration">User Registration</string>
 </resources>
