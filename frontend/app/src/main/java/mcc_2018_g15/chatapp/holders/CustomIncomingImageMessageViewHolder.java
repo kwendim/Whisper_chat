@@ -18,7 +18,7 @@ public class CustomIncomingImageMessageViewHolder
 
     public CustomIncomingImageMessageViewHolder(View itemView, Object payload) {
         super(itemView, payload);
-        onlineIndicator =   itemView.findViewById(R.id.onlineIndicator);
+        //onlineIndicator =   itemView.findViewById(R.id.onlineIndicator);
 
     }
 
@@ -26,11 +26,11 @@ public class CustomIncomingImageMessageViewHolder
     public void onBind(Message message) {
         super.onBind(message);
 
-        boolean isOnline = message.getUser().isBoolean();
-        if (isOnline) {
-            onlineIndicator.setBackgroundResource(R.drawable.shape_bubble_online);
-        } else {
-            onlineIndicator.setBackgroundResource(R.drawable.shape_bubble_offline);
-        }
+//        boolean isOnline = message.getUser().isBoolean();
+//        if (isOnline) {
+//            onlineIndicator.setBackgroundResource(R.drawable.shape_bubble_online);
+//        } else {
+//            onlineIndicator.setBackgroundResource(R.drawable.shape_bubble_offline);
+//        }
     }
 }

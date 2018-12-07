@@ -30,6 +30,7 @@ import android.os.Bundle;
     import com.google.firebase.storage.StorageReference;
     import com.stfalcon.frescoimageviewer.ImageViewer;
 
+    import java.io.File;
     import java.text.SimpleDateFormat;
     import java.util.ArrayList;
     import java.util.Collections;
@@ -38,6 +39,7 @@ import android.os.Bundle;
     import java.util.LinkedHashMap;
     import java.util.List;
     import java.util.Map;
+    import java.util.function.Supplier;
 
 //TODO: Orientation change closes the viewer. Back Button for view. Implement Download of images. (Maybe) Ability to navigate
 // through all images when opening one.
@@ -64,7 +66,9 @@ public class GalleryActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Main Page");
         }
         toolbar.inflateMenu(R.menu.menu_gallery);
-        DiskCacheConfig diskCacheConfig = DiskCacheConfig.newBuilder(this).setMaxCacheSize(10000).setBaseDirectoryName("cache")
+
+
+        DiskCacheConfig diskCacheConfig = DiskCacheConfig.newBuilder(this).setBaseDirectoryName("cache")
                 .setBaseDirectoryPath(getExternalFilesDir(Environment.DIRECTORY_PICTURES))
                 .build();
 

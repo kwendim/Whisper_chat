@@ -58,10 +58,10 @@ public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
     private static final String CHAT_ID = "-LSAJSxZlW6W1Mw5Jd2y";
-    private static final String USER_ID = "user_id_1";
+    private static final String USER_ID = "user_id_2";
     private static int REQUEST_IMAGE = 1;
     private static int REQUEST_TAKE_PHOTO = 2;
-    final Author author = new Author(USER_ID,"kidus","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
+    final Author author = new Author(USER_ID,"shamimi","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
     DatabaseReference myRef;
     FirebaseDatabase database;
     private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
