@@ -1,6 +1,8 @@
 package mcc_2018_g15.chatapp;
 
     import android.content.Intent;
+    import android.content.res.Configuration;
+    import android.os.Environment;
     import android.support.annotation.NonNull;
     import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,6 +16,7 @@ import android.os.Bundle;
     import android.widget.GridView;
     import android.widget.Toast;
 
+    import com.facebook.cache.disk.DiskCacheConfig;
     import com.facebook.drawee.backends.pipeline.Fresco;
     import com.facebook.drawee.view.SimpleDraweeView;
     import com.facebook.imagepipeline.core.ImagePipelineConfig;
@@ -29,6 +32,7 @@ import android.os.Bundle;
 
     import java.text.SimpleDateFormat;
     import java.util.ArrayList;
+    import java.util.Collections;
     import java.util.Date;
     import java.util.HashMap;
     import java.util.LinkedHashMap;
@@ -60,18 +64,25 @@ public class GalleryActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Main Page");
         }
         toolbar.inflateMenu(R.menu.menu_gallery);
+        DiskCacheConfig diskCacheConfig = DiskCacheConfig.newBuilder(this).setMaxCacheSize(10000).setBaseDirectoryName("cache")
+                .setBaseDirectoryPath(getExternalFilesDir(Environment.DIRECTORY_PICTURES))
+                .build();
 
-
-        ImagePipelineConfig config = ImagePipelineConfig.newBuilder(this)
-                .setProgressiveJpegConfig(new SimpleProgressiveJpegConfig())
+        ImagePipelineConfig config = ImagePipelineConfig.newBuilder(this).setProgressiveJpegConfig(new SimpleProgressiveJpegConfig())
                 .setResizeAndRotateEnabledForNetwork(true)
                 .setDownsampleEnabled(true)
+                .setDiskCacheEnabled(true)
+                .setMainDiskCacheConfig(diskCacheConfig)
                 .build();
-        Fresco.initialize(GalleryActivity.this,config);
+
+        Fresco.initialize(this,config);
+
+
         Log.d("fresco", "initialized");
 
         setUpRecyclerView();
         getAllImages_date();
+        SORTING_OPTION =1;
     }
 
 
@@ -147,7 +158,7 @@ public class GalleryActivity extends AppCompatActivity {
 
 
     private void getAllImages_date(){
-        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID);
+        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
         final Map<String,ArrayList<String>> image_sorter = new LinkedHashMap<>();
 
 
@@ -157,26 +168,27 @@ public class GalleryActivity extends AppCompatActivity {
 
                 Log.e("Count " ,""+snapshot.getChildrenCount());
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
-                    if(postSnapshot.hasChild("imageurl")){
-                        String image_date = new SimpleDateFormat("MMMM dd,yyyy").format(postSnapshot.child("createdAt").getValue(Date.class));
-                        String image_path = postSnapshot.child("imageurl").child("url").getValue(String.class);
-                        if(image_sorter.get(image_date)==null){
-                            ArrayList<String> new_element = new ArrayList<>();
-                            new_element.add(image_path);
-                            image_sorter.put(image_date,new_element);
-                        }
-                        else {
-                            image_sorter.get(image_date).add(image_path);
-                        }
+                        if(postSnapshot.hasChild("createdAt")) {
+                            String image_date = new SimpleDateFormat("MMMM dd,yyyy").format(postSnapshot.child("createdAt").getValue(Date.class));
+                            String image_path = postSnapshot.child("url").getValue(String.class);
+                            if (image_sorter.get(image_date) == null) {
+                                ArrayList<String> new_element = new ArrayList<>();
+                                new_element.add(image_path);
+                                image_sorter.put(image_date, new_element);
+                            } else {
+                                image_sorter.get(image_date).add(image_path);
+                            }
 
-                        Log.d("haschild", image_sorter.toString());
-                    }
+                            Log.d("haschild", image_sorter.toString());
+                        }
                 }
 
                 Map<String,ArrayList<String>> ordered_data = new LinkedHashMap<>();
                 List<String> keyList = new ArrayList<String>(image_sorter.keySet());
+                List<ArrayList<String>> images_list = new ArrayList<>(image_sorter.values());
                 for(int i=image_sorter.size()-1; i>=0; i--){
-                    ordered_data.put(keyList.get(i),image_sorter.get(keyList.get(i)));
+                    Collections.reverse(images_list.get(i));
+                    ordered_data.put(keyList.get(i),images_list.get(i));
                 }
                 Log.d("ordered data", ordered_data.toString());
                 populateRecyclerView(ordered_data);
@@ -193,8 +205,8 @@ public class GalleryActivity extends AppCompatActivity {
         });
     }
 
-    private void getAllImages_user() {
-        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID);
+    private void getAllImages_user() {//TODO get user name from users table
+        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
         final Map<String,ArrayList<String>> image_sorter = new HashMap<>();
 
 
@@ -204,15 +216,14 @@ public class GalleryActivity extends AppCompatActivity {
 
                 Log.e("Count " ,""+snapshot.getChildrenCount());
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
-                    if(postSnapshot.hasChild("imageurl")){
+                    if(postSnapshot.hasChild("id")) {
                         String user_id = postSnapshot.child("id").getValue(String.class);
-                        String image_path = postSnapshot.child("imageurl").child("url").getValue(String.class);
-                        if(image_sorter.get(user_id)==null){
+                        String image_path = postSnapshot.child("url").getValue(String.class);
+                        if (image_sorter.get(user_id) == null) {
                             ArrayList<String> new_element = new ArrayList<>();
                             new_element.add(image_path);
-                            image_sorter.put(user_id,new_element);
-                        }
-                        else {
+                            image_sorter.put(user_id, new_element);
+                        } else {
                             image_sorter.get(user_id).add(image_path);
                         }
 
@@ -232,5 +243,45 @@ public class GalleryActivity extends AppCompatActivity {
     }
 
     private void getAllImages_label() {
+        DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
+        final Map<String,ArrayList<String>> image_sorter = new HashMap<>();
+
+
+        imagesRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+
+                Log.e("Count " ,"" + snapshot.getChildrenCount());
+                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                        String label = postSnapshot.child("label").getValue(String.class);
+                        String image_path = postSnapshot.child("url").getValue(String.class);
+                        if(image_sorter.get(label)==null){
+                            ArrayList<String> new_element = new ArrayList<>();
+                            new_element.add(image_path);
+                            image_sorter.put(label,new_element);
+                        }
+                        else {
+                            image_sorter.get(label).add(image_path);
+                        }
+
+                        Log.d("haschild", image_sorter.toString());
+                }
+
+                if(image_sorter.get("others")!=null) {
+                    ArrayList<String> others = image_sorter.get("others");
+                    image_sorter.remove("others");
+                    image_sorter.put("others",others);
+                }
+
+                populateRecyclerView(image_sorter);
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e("The read failed: " ,databaseError.getMessage());
+
+            }
+        });
     }
 }

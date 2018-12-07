@@ -1,6 +1,7 @@
 package mcc_2018_g15.chatapp;
 
 import android.content.Context;
+import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,7 +9,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.view.SimpleDraweeView;
+import com.facebook.imagepipeline.common.ResizeOptions;
+import com.facebook.imagepipeline.request.ImageRequest;
+import com.facebook.imagepipeline.request.ImageRequestBuilder;
 import com.stfalcon.frescoimageviewer.ImageViewer;
 
 import java.util.ArrayList;
@@ -48,7 +53,14 @@ class ImageRecyclerViewAdapter extends RecyclerView.Adapter<ImageRecyclerViewAda
                 new ImageViewer.Builder<>(context,arrayList).setStartPosition(position).show();
             }
         });
-        holder.drawee.setImageURI(arrayList.get(position));
+        ImageRequest request = ImageRequestBuilder.newBuilderWithSource(Uri.parse(arrayList.get(position)))
+                .setResizeOptions(new ResizeOptions(90, 90))
+                .build();
+        holder.drawee.setController(
+                Fresco.newDraweeControllerBuilder()
+                        .setOldController(holder.drawee.getController())
+                        .setImageRequest(request)
+                        .build());
 
     }
 
