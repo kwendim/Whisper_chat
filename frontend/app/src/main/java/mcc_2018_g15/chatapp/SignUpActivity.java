@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,7 +17,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -25,6 +29,9 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +48,7 @@ public class SignUpActivity extends AppCompatActivity {
     //defining firebaseauth object
     private FirebaseAuth firebaseAuth;
     private DatabaseReference usersRef;
+    private Uri uploadedAvatarUri, orgAvatarUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,9 +95,9 @@ public class SignUpActivity extends AppCompatActivity {
 
     }
 
-    private void addUserToDatabase(String username, String imgUrl) {
+    private void addUser(String userId, String username, String imgUrl) {
         User newUser = new User(username, imgUrl, "full", "dark");
-        usersRef.child(firebaseAuth.getUid()).setValue(newUser);
+        usersRef.child(userId).setValue(newUser);
     }
 
     private void chooseImage() {
@@ -103,10 +111,10 @@ public class SignUpActivity extends AppCompatActivity {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         InputStream inputStream;
         if (requestCode == PICK_IMAGE) {
-            Uri uri = data.getData();
-            if (uri != null) {
+            orgAvatarUri = data.getData();
+            if (orgAvatarUri != null) {
                 try {
-                    inputStream = getContentResolver().openInputStream(uri);
+                    inputStream = getContentResolver().openInputStream(orgAvatarUri);
                     Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                     Bitmap compressedBitmap = resizeBitmap(bitmap, 320);
                     imageViewAvatar.setImageBitmap(compressedBitmap);
@@ -117,6 +125,34 @@ public class SignUpActivity extends AppCompatActivity {
         }
 
     }
+
+    private void addUserWithPhoto(final Uri imageUri) {
+        final String userId = firebaseAuth.getUid();
+        final String username = editTextUsername.getText().toString().trim();
+        final StorageReference storageReference =
+                FirebaseStorage.getInstance()
+                        .getReference("users")
+                        .child(userId)
+                        .child("avatar");
+
+        UploadTask uploadTask = storageReference.putFile(imageUri);
+        uploadTask.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                // Handle unsuccessful uploads
+            }
+        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                // taskSnapshot.getMetadata() contains file metadata such as size, content-type, etc.
+                // ...
+                Log.d("SignUpActivity", "Image uploaded successfully");
+                addUser(userId, username, taskSnapshot.getMetadata().getPath());
+            }
+        });
+
+    }
+
 
     private void registerUser(){
 
@@ -148,10 +184,9 @@ public class SignUpActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-
+                progressDialog.dismiss();
             }
         });
-        progressDialog.dismiss();
     }
 
     private Bitmap resizeBitmap(Bitmap mBitMap, int maxSize) {
@@ -177,8 +212,14 @@ public class SignUpActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         //checking if success
                         if(task.isSuccessful()){
-                            String username = editTextUsername.getText().toString().trim();
-                            addUserToDatabase(username, "blablabla");
+                            if (orgAvatarUri != null) {
+                                addUserWithPhoto(orgAvatarUri);
+                            }
+                            else {
+                                String username = editTextUsername.getText().toString().trim();
+                                String userId = firebaseAuth.getUid();
+                                addUser(userId, username, "users/default/default.png");
+                            }
                             startActivity(new Intent(SignUpActivity.this, DialogsActivity.class));
                             finish();
                         }else{
