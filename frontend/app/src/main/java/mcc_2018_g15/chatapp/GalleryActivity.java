@@ -3,6 +3,7 @@ package mcc_2018_g15.chatapp;
     import android.content.Intent;
     import android.content.res.Configuration;
     import android.os.Environment;
+    import android.provider.ContactsContract;
     import android.support.annotation.NonNull;
     import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -45,10 +46,8 @@ import android.os.Bundle;
 // through all images when opening one.
 //TODO: It takes a long time to load the images
 public class GalleryActivity extends AppCompatActivity {
-    String samp_img_url= "https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_205836?alt=media&token=1198961b-ac0d-4ec9-9029-3edb5f86dc77";
-    private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
     RecyclerView galleryRecycler;
-    private static final String CHAT_ID = "-LSAJSxZlW6W1Mw5Jd2y";
+    private static String CHAT_ID ;
     private static int SORTING_OPTION = 1;
 
 
@@ -63,7 +62,7 @@ public class GalleryActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Main Page");
+            getSupportActionBar().setTitle("Shared Images");
         }
         toolbar.inflateMenu(R.menu.menu_gallery);
 
@@ -83,6 +82,8 @@ public class GalleryActivity extends AppCompatActivity {
 
 
         Log.d("fresco", "initialized");
+
+        CHAT_ID = getIntent().getStringExtra("chatId");
 
         setUpRecyclerView();
         getAllImages_date();
@@ -212,6 +213,7 @@ public class GalleryActivity extends AppCompatActivity {
     private void getAllImages_user() {//TODO get user name from users table
         DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
         final Map<String,ArrayList<String>> image_sorter = new HashMap<>();
+        final DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
 
 
         imagesRef.addValueEventListener(new ValueEventListener() {
@@ -234,7 +236,30 @@ public class GalleryActivity extends AppCompatActivity {
                         Log.d("haschild", image_sorter.toString());
                     }
                 }
-                populateRecyclerView(image_sorter);
+
+                final List<String> keyList = new ArrayList<String>(image_sorter.keySet());
+                final List<ArrayList<String>> images_list = new ArrayList<>(image_sorter.values());
+                final Map<String,ArrayList<String>> resorted = new HashMap<>();
+
+                usersRef.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        Log.d("insideUserref", "now");
+                        for(int i=0; i<=image_sorter.size()-1; i++){
+                            String username = dataSnapshot.child(keyList.get(i)).child("name").getValue(String.class);
+                            resorted.put(username,images_list.get(i));
+                            Log.d("insideUserref", resorted.toString());
+
+                        }
+                        populateRecyclerView(resorted);
+
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                });
 
             }
 
@@ -244,6 +269,16 @@ public class GalleryActivity extends AppCompatActivity {
 
             }
         });
+
+        final List<String> keyList = new ArrayList<String>(image_sorter.keySet());
+        final List<ArrayList<String>> images_list = new ArrayList<>(image_sorter.values());
+        final Map<String,ArrayList<String>> resorted = new HashMap<>();
+
+
+
+
+
+
     }
 
     private void getAllImages_label() {

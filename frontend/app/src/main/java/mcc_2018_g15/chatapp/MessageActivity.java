@@ -34,6 +34,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -69,6 +70,11 @@ public class MessageActivity extends AppCompatActivity {
     private String CHAT_ID;
     private Author author;
     private static  String USER_ID;
+    private static String USERNAME;
+    private static String AVATAR;
+    private static ImageLoader imageLoader;
+    private static MessageInput inputView;
+    private MessagesListAdapter<Message> adapter;
 
 
 
@@ -111,6 +117,7 @@ public class MessageActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         CHAT_ID = intent.getStringExtra("chatId");
+        //CHAT_ID = "-LT8GobwwpIEVyopXG30";
         Log.d("chat_id", CHAT_ID);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
@@ -118,7 +125,112 @@ public class MessageActivity extends AppCompatActivity {
             Log.d("UserID", USER_ID);
         }
 
-        author = new Author(USER_ID,"shamimi","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
+        DatabaseReference userref = FirebaseDatabase.getInstance().getReference("users");
+        userref.child(USER_ID).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                USERNAME = dataSnapshot.child("name").getValue(String.class);
+                AVATAR = dataSnapshot.child("avatar").getValue(String.class);
+                author = new Author(USER_ID,USERNAME,AVATAR);
+                MessagesList messagesList = findViewById(R.id.messagesList);
+
+                CustomIncomingTextMessageViewHolder.Payload payload = new CustomIncomingTextMessageViewHolder.Payload();
+                payload.avatarClickListener = new CustomIncomingTextMessageViewHolder.OnAvatarClickListener() {
+                    @Override
+                    public void onAvatarClick() {
+                        Toast.makeText(MessageActivity.this,
+                                "Text message avatar clicked", Toast.LENGTH_SHORT).show();
+                    }
+                };
+
+                MessageHolders holdersConfig = new MessageHolders()
+                        .setIncomingTextConfig(
+                                CustomIncomingTextMessageViewHolder.class,
+                                R.layout.custom_incoming_text_view_holder,
+                                payload).setOutcomingTextConfig(
+                                CustomOutcomingTextMessageViewHolder.class,
+                                R.layout.item_custom_outcoming_text_message)
+                        .setIncomingImageConfig(
+                                CustomIncomingImageMessageViewHolder.class,
+                                R.layout.item_custom_incoming_image_message)
+                        .setOutcomingImageConfig(
+                                CustomOutcomingImageMessageViewHolder.class,
+                                R.layout.item_custom_outcoming_image_message);
+
+                inputView = (MessageInput) findViewById(R.id.input);
+                 adapter = new MessagesListAdapter<>(author.getId(),holdersConfig, imageLoader);
+
+                messagesList.setAdapter(adapter);
+                Log.d("username", USERNAME + ", "+ AVATAR);
+                inputView.setInputListener(new MessageInput.InputListener() {
+                    @Override
+                    public boolean onSubmit(CharSequence input) {
+                        //validate and send message
+
+                        Message message = new Message(USER_ID, author, input.toString() );
+                        //Message rep_message = new Message("user_replier", zee, input.toString() + "'s reply");
+                        myRef.push().setValue(message);
+                        // myRef.push().setValue(rep_message);
+
+                        return true;
+                    }
+                });
+
+                inputView.setAttachmentsListener(new MessageInput.AttachmentsListener() {
+                    @Override
+                    public void onAddAttachments() {
+
+                        new AlertDialog.Builder(MessageActivity.this)
+                                .setItems(R.array.view_types_dialog, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        if (i==0){
+                                            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                                            intent.setType("image/*");
+                                            startActivityForResult(intent, REQUEST_IMAGE);
+                                        }
+                                        else {
+                                            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+                                            // Ensure that there's a camera activity to handle the intent
+                                            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                                                // Create the File where the photo should go
+                                                File photoFile = null;
+                                                try {
+                                                    photoFile = createImageFile();
+                                                } catch (IOException ex) {
+                                                    // Error occurred while creating the File
+
+                                                }
+                                                // Continue only if the File was successfully created
+                                                if (photoFile != null) {
+                                                    photoURI = FileProvider.getUriForFile(MessageActivity.this,
+                                                            "mcc_2018_g15.chatapp.fileprovider",
+                                                            photoFile);
+                                                    Log.d("photouri", photoURI.toString());
+                                                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                                                    startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                                                }
+                                            }
+
+                                        }
+                                        Log.i("interface", String.valueOf(i));
+                                    }
+                                })
+                                .show();
+                        //select attachments
+
+                    }
+                });
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
 
 
 
@@ -129,7 +241,7 @@ public class MessageActivity extends AppCompatActivity {
         myRef = database.getReference().child("chat_msgs").child(CHAT_ID);
 
 
-        ImageLoader imageLoader = new ImageLoader() {
+         imageLoader = new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, @Nullable String url, @Nullable Object payload) {
                 if (url == LOADING_IMAGE_URL){
@@ -143,35 +255,7 @@ public class MessageActivity extends AppCompatActivity {
         };
 
 
-        MessagesList messagesList = findViewById(R.id.messagesList);
 
-        CustomIncomingTextMessageViewHolder.Payload payload = new CustomIncomingTextMessageViewHolder.Payload();
-        payload.avatarClickListener = new CustomIncomingTextMessageViewHolder.OnAvatarClickListener() {
-            @Override
-            public void onAvatarClick() {
-                Toast.makeText(MessageActivity.this,
-                        "Text message avatar clicked", Toast.LENGTH_SHORT).show();
-            }
-        };
-
-        MessageHolders holdersConfig = new MessageHolders()
-                .setIncomingTextConfig(
-                        CustomIncomingTextMessageViewHolder.class,
-                        R.layout.custom_incoming_text_view_holder,
-                        payload).setOutcomingTextConfig(
-                        CustomOutcomingTextMessageViewHolder.class,
-                        R.layout.item_custom_outcoming_text_message)
-                .setIncomingImageConfig(
-                        CustomIncomingImageMessageViewHolder.class,
-                        R.layout.item_custom_incoming_image_message)
-                .setOutcomingImageConfig(
-                        CustomOutcomingImageMessageViewHolder.class,
-                        R.layout.item_custom_outcoming_image_message);
-
-        MessageInput inputView = (MessageInput) findViewById(R.id.input);
-        final MessagesListAdapter<Message> adapter = new MessagesListAdapter<>(author.getId(),holdersConfig, imageLoader);
-
-        messagesList.setAdapter(adapter);
 
 
 
@@ -215,67 +299,7 @@ public class MessageActivity extends AppCompatActivity {
         });
 
 
-        inputView.setInputListener(new MessageInput.InputListener() {
-            @Override
-            public boolean onSubmit(CharSequence input) {
-                //validate and send message
 
-                Message message = new Message(USER_ID, author, input.toString() );
-                //Message rep_message = new Message("user_replier", zee, input.toString() + "'s reply");
-                myRef.push().setValue(message);
-               // myRef.push().setValue(rep_message);
-
-                return true;
-            }
-        });
-
-        inputView.setAttachmentsListener(new MessageInput.AttachmentsListener() {
-            @Override
-            public void onAddAttachments() {
-
-                new AlertDialog.Builder(MessageActivity.this)
-                        .setItems(R.array.view_types_dialog, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                if (i==0){
-                                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                                    intent.setType("image/*");
-                                    startActivityForResult(intent, REQUEST_IMAGE);
-                                }
-                                else {
-                                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-                                    // Ensure that there's a camera activity to handle the intent
-                                    if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                                        // Create the File where the photo should go
-                                        File photoFile = null;
-                                        try {
-                                            photoFile = createImageFile();
-                                        } catch (IOException ex) {
-                                            // Error occurred while creating the File
-
-                                        }
-                                        // Continue only if the File was successfully created
-                                        if (photoFile != null) {
-                                            photoURI = FileProvider.getUriForFile(MessageActivity.this,
-                                                    "mcc_2018_g15.chatapp.fileprovider",
-                                                    photoFile);
-                                            Log.d("photouri", photoURI.toString());
-                                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                                            startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
-                                        }
-                                    }
-
-                                }
-                                Log.i("interface", String.valueOf(i));
-                            }
-                        })
-                        .show();
-                //select attachments
-
-            }
-        });
     }
 
     @Override
@@ -296,9 +320,10 @@ public class MessageActivity extends AppCompatActivity {
         if (id == R.id.menu_gallery) {
           //  logoutUser();
             Log.d("Menu_Item", "Gallery");
-            Intent myIntent = new Intent(this, GalleryActivity.class);
-            //myIntent.putExtra("key", value); //Optional parameters
-            startActivity(myIntent);
+
+            Intent galleryIntent = new Intent(this, GalleryActivity.class);
+            galleryIntent.putExtra("chatId", CHAT_ID);
+            startActivity(galleryIntent);
             return true;
         } else if (id == R.id.menu_addMember) {
             //  logoutUser();
