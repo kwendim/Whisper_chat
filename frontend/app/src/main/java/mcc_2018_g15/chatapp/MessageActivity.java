@@ -27,6 +27,8 @@ import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -57,16 +59,17 @@ import mcc_2018_g15.chatapp.holders.CustomOutcomingTextMessageViewHolder;
 public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
-    private static final String CHAT_ID = "-LSAJSxZlW6W1Mw5Jd2y";
-    private static final String USER_ID = "user_id_2";
     private static int REQUEST_IMAGE = 1;
     private static int REQUEST_TAKE_PHOTO = 2;
-    final Author author = new Author(USER_ID,"shamimi","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
     DatabaseReference myRef;
     FirebaseDatabase database;
     private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
     String mCurrentPhotoPath;
     Uri photoURI;
+    private String CHAT_ID;
+    private Author author;
+    private static  String USER_ID;
+
 
 
 
@@ -104,9 +107,19 @@ public class MessageActivity extends AppCompatActivity {
         toolbar.setSubtitle("Test Subtitle");
         toolbar.inflateMenu(R.menu.menu_message);
 
+
+
         Intent intent = getIntent();
-        String id = intent.getStringExtra("id");
-        String name = intent.getStringExtra("name");
+        CHAT_ID = intent.getStringExtra("chatId");
+        Log.d("chat_id", CHAT_ID);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            USER_ID = user.getUid();
+            Log.d("UserID", USER_ID);
+        }
+
+        author = new Author(USER_ID,"shamimi","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
+
 
 
 

@@ -2,6 +2,8 @@ package mcc_2018_g15.chatapp;
 
 import android.util.Log;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -45,7 +47,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private void sendRegistrationToServer(String token) {
         // TODO: Implement this method to send token to your app server.
-        DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference().child("users").child("user_id_1");
+        String uid = "";
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            uid = user.getUid();
+            Log.d("UserID", uid);
+        }
+
+        DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference().child("users").child(uid);
         dbRef.child("token").setValue(token);
     }
 }
