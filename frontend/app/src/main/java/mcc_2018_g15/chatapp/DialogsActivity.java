@@ -9,6 +9,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -35,14 +37,18 @@ public class DialogsActivity extends AppCompatActivity{
     FirebaseDatabase database;
     FirebaseAuth firebaseAuth;
 
+    private Boolean isFabOpen = false;
+    private FloatingActionButton fab,fab1,fab2;
+    private Animation fab_open,fab_close,rotate_forward,rotate_backward;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dialogs);
 
-        DialogsList dialogsListView = (DialogsList)findViewById(R.id.dialogsList);
         firebaseAuth = FirebaseAuth.getInstance();
         USER_ID = firebaseAuth.getUid();
+
+        DialogsList dialogsListView = (DialogsList)findViewById(R.id.dialogsList);
 
         database = FirebaseDatabase.getInstance();
         myRef = database.getReference().child("users").child(USER_ID).child("user_chats");
@@ -98,20 +104,21 @@ public class DialogsActivity extends AppCompatActivity{
                         ArrayList<String> keyList = new ArrayList<>();
                         final ArrayList<String> usernames = new ArrayList<String>();
                         final ArrayList<Author> authorsList = new ArrayList<Author>();
-                        final int[] index = new int[] {0};
-                        for (DataSnapshot child : chatsDataSnapshot.child("users").getChildren()) {
+//                        final int[] index = new int[] {0};
+                        for (final DataSnapshot child : chatsDataSnapshot.child("users").getChildren()) {
                             Log.e("!_@@_Key::>", child.getKey());
                             keyList.add( child.getValue().toString());
                             DatabaseReference usersRef = database.getReference().child("users").child(child.getKey());
 
-                            usersRef.addValueEventListener(new ValueEventListener() {
+                            usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot usersDataSnapshot) {
 //                                    if(usernames.size()>index[0]) {
 //                                        usernames.remove(index[0]);
 //                                        usernames.add(index[0], usersDataSnapshot.child("username").getValue().toString());
 //                                    }else{
-                                        usernames.add(index[0], usersDataSnapshot.child("name").getValue().toString());
+                                        if(!usersDataSnapshot.getKey().equals(USER_ID)||chatsDataSnapshot.child("users").getChildrenCount()==1)
+                                            usernames.add(usersDataSnapshot.child("name").getValue().toString());
                                         authorsList.add(new Author(usersDataSnapshot.getKey(), usersDataSnapshot.child("name").getValue().toString(), usersDataSnapshot.child("avatar").getValue().toString()));
 //                                        index[0]++;
 //                                    }
@@ -125,7 +132,17 @@ public class DialogsActivity extends AppCompatActivity{
                                     }
 //                                    Log.e("!_@@_LastMessageURL::>", lastMessage.getUser().getAvatar());
 //                                    Message msg = new Message("id", new Author("user_id","","http://i.imgur.com/mRqh5w1.png"), dialog.getLastMessage().getText(), calendar.getTime());
-                                    Dialog dlg = new Dialog(dialog.getId(), dialog.getDialogPhoto(), TextUtils.join(", ", usernames), authorsList, lastMessage, dialog.getUnreadCount());
+                                    String chatImage = "";
+                                    try {
+                                        if ((boolean) chatsDataSnapshot.child("isGroup").getValue()) {
+                                            chatImage = dialog.getDialogPhoto();
+                                        } else if (!usersDataSnapshot.getKey().equals(USER_ID)) {
+                                            chatImage = usersDataSnapshot.child("avatar").getValue().toString();
+                                        }
+                                    } catch(Exception e){
+                                        chatImage = usersDataSnapshot.child("avatar").getValue().toString();
+                                    }
+                                    Dialog dlg = new Dialog(dialog.getId(), chatImage, TextUtils.join(", ", usernames), authorsList, lastMessage, dialog.getUnreadCount());
                                     dialogsListAdapter.updateItemById(dlg);
                                 }
 
@@ -236,16 +253,45 @@ public class DialogsActivity extends AppCompatActivity{
         });
         //dialogsListAdapter.setItems(getDialogs());
 
-        FloatingActionButton fab = findViewById(R.id.fab);
+        fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 //                Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
 //                        .setAction("Action", null).show();
+//                Intent searchIntent = new Intent(DialogsActivity.this, SearchUsersActivity.class);
+//                startActivity(searchIntent);
+                animateFAB();
+            }
+        });
+
+        fab1 = (FloatingActionButton)findViewById(R.id.fab1);
+        fab2 = (FloatingActionButton)findViewById(R.id.fab2);
+        fab_open = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_open);
+        fab_close = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.fab_close);
+        rotate_forward = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.rotate_forward);
+        rotate_backward = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.rotate_backwards);
+
+        fab1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                animateFAB();
                 Intent searchIntent = new Intent(DialogsActivity.this, SearchUsersActivity.class);
+                searchIntent.putExtra("isGroup", false);
                 startActivity(searchIntent);
             }
         });
+        fab2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                animateFAB();
+                Intent searchIntent = new Intent(DialogsActivity.this, SearchUsersActivity.class);
+                searchIntent.putExtra("isGroup", true);
+                startActivity(searchIntent);
+            }
+        });
+
+
     }
 
     @Override
@@ -406,4 +452,29 @@ public class DialogsActivity extends AppCompatActivity{
 //    static boolean getRandomBoolean() {
 //        return rnd.nextBoolean();
 //    }
+
+    public void animateFAB(){
+
+        if(isFabOpen){
+
+            fab.startAnimation(rotate_backward);
+            fab1.startAnimation(fab_close);
+            fab2.startAnimation(fab_close);
+            fab1.setClickable(false);
+            fab2.setClickable(false);
+            isFabOpen = false;
+            Log.d("Raj", "close");
+
+        } else {
+
+            fab.startAnimation(rotate_forward);
+            fab1.startAnimation(fab_open);
+            fab2.startAnimation(fab_open);
+            fab1.setClickable(true);
+            fab2.setClickable(true);
+            isFabOpen = true;
+            Log.d("Raj","open");
+
+        }
+    }
 }
