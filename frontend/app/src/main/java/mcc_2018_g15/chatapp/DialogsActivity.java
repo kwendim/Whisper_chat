@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -29,9 +30,10 @@ import java.util.Calendar;
 public class DialogsActivity extends AppCompatActivity{
 
     private static final String TAG = "MessageActivity";
-    private static final String USER_ID = "user_id";
+    private static String USER_ID = "user_id";
     DatabaseReference myRef;
     FirebaseDatabase database;
+    FirebaseAuth firebaseAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +41,8 @@ public class DialogsActivity extends AppCompatActivity{
         setContentView(R.layout.activity_dialogs);
 
         DialogsList dialogsListView = (DialogsList)findViewById(R.id.dialogsList);
+        firebaseAuth = FirebaseAuth.getInstance();
+        USER_ID = firebaseAuth.getUid();
 
         database = FirebaseDatabase.getInstance();
         myRef = database.getReference().child("users").child(USER_ID).child("user_chats");
@@ -107,7 +111,7 @@ public class DialogsActivity extends AppCompatActivity{
 //                                        usernames.remove(index[0]);
 //                                        usernames.add(index[0], usersDataSnapshot.child("username").getValue().toString());
 //                                    }else{
-                                        usernames.add(index[0], usersDataSnapshot.child("username").getValue().toString());
+                                        usernames.add(index[0], usersDataSnapshot.child("name").getValue().toString());
                                         authorsList.add(new Author(usersDataSnapshot.getKey(), usersDataSnapshot.child("name").getValue().toString(), usersDataSnapshot.child("avatar").getValue().toString()));
 //                                        index[0]++;
 //                                    }
@@ -135,7 +139,7 @@ public class DialogsActivity extends AppCompatActivity{
 
 //                        new_dialog.setDialogName(TextUtils.join(", ", keyList));
 
-                        final String last_message=(chatsDataSnapshot.child("last_message").getValue(String.class));
+                        final String last_message=(chatsDataSnapshot.child("last_message").child("text").getValue(String.class));
                         // TODO: 11/27/2018 update data below with data from last message object
                         Message msg = new Message("id", new Author("user_id","","http://i.imgur.com/mRqh5w1.png"), last_message, calendar.getTime());
                         new_dialog.setLastMessage(msg);

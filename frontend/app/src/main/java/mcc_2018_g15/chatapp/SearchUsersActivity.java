@@ -26,7 +26,7 @@ import com.squareup.picasso.Picasso;
 public class SearchUsersActivity extends AppCompatActivity {
 
     private RecyclerView chatsList;
-    private DatabaseReference databaseReference;
+    private DatabaseReference databaseRef;
     private Query query;
     private FirebaseAuth firebaseAuth;
 
@@ -42,7 +42,7 @@ public class SearchUsersActivity extends AppCompatActivity {
         chatsList = (RecyclerView)findViewById(R.id.chats_list);
         chatsList.setHasFixedSize(true);
         chatsList.setLayoutManager(new LinearLayoutManager(this));
-        databaseReference = FirebaseDatabase.getInstance().getReference().child("users");
+        databaseRef = FirebaseDatabase.getInstance().getReference();
 
         SearchView sv = (SearchView)findViewById(R.id.searchView);
         sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -76,7 +76,7 @@ public class SearchUsersActivity extends AppCompatActivity {
                         holder.view.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                databaseReference.child("chats").push()
+                                databaseRef.child("chats").push()
                                         .setValue("", new DatabaseReference.CompletionListener() {
                                             @Override
                                             public void onComplete(DatabaseError databaseError,
@@ -86,12 +86,12 @@ public class SearchUsersActivity extends AppCompatActivity {
                                                     //databaseRef.child("chats").child(databaseReference.getKey()).child("dialogName").setValue("test");
                                                     //databaseRef.child("chats").child(databaseReference.getKey()).child("dialogPhoto").setValue("test");
                                                 } else {
-                                                    databaseReference.child("chats").child(chatID).child("lastMessage").setValue("");
-                                                    databaseReference.child("chats").child(chatID).child("users").child(USER_ID).setValue("value");
-                                                    databaseReference.child("chats").child(chatID).child("users").child(userId).setValue("value");
+                                                    databaseRef.child("chats").child(chatID).child("lastMessage").setValue("");
+                                                    databaseRef.child("chats").child(chatID).child("users").child(USER_ID).setValue("value");
+                                                    databaseRef.child("chats").child(chatID).child("users").child(userId).setValue("value");
 
-                                                    databaseReference.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
-                                                    databaseReference.child("users").child(userId).child("user_chats").child("chatID").setValue("admin");
+                                                    databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
+                                                    databaseRef.child("users").child(userId).child("user_chats").child(chatID).setValue("admin");
 
                                                     Intent chatIntent = new Intent(getBaseContext(), MessageActivity.class);
                                                     chatIntent.putExtra("chatId", chatID);
