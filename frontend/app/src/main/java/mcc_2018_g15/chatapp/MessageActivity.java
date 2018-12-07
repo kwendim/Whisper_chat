@@ -116,8 +116,8 @@ public class MessageActivity extends AppCompatActivity {
 
 
         Intent intent = getIntent();
-        //CHAT_ID = intent.getStringExtra("chatId");
-        CHAT_ID = "-LT8GobwwpIEVyopXG30";
+        CHAT_ID = intent.getStringExtra("chatId");
+        //CHAT_ID = "-LT8GobwwpIEVyopXG30";
         Log.d("chat_id", CHAT_ID);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
@@ -320,9 +320,10 @@ public class MessageActivity extends AppCompatActivity {
         if (id == R.id.menu_gallery) {
           //  logoutUser();
             Log.d("Menu_Item", "Gallery");
-            Intent myIntent = new Intent(this, GalleryActivity.class);
-            //myIntent.putExtra("key", value); //Optional parameters
-            startActivity(myIntent);
+
+            Intent galleryIntent = new Intent(this, GalleryActivity.class);
+            galleryIntent.putExtra("chatId", CHAT_ID);
+            startActivity(galleryIntent);
             return true;
         } else if (id == R.id.menu_addMember) {
             //  logoutUser();
