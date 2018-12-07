@@ -17,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -134,21 +135,31 @@ public class SignUpActivity extends AppCompatActivity {
                         .child("avatar");
 
         UploadTask uploadTask = storageReference.putFile(imageUri);
-        uploadTask.addOnFailureListener(new OnFailureListener() {
+
+        Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
             @Override
-            public void onFailure(@NonNull Exception exception) {
-                // Handle unsuccessful uploads
+            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                if (!task.isSuccessful()) {
+                    throw task.getException();
+                }
+
+                // Continue with the task to get the download URL
+
+                return storageReference.getDownloadUrl();
             }
-        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+        }).addOnCompleteListener(new OnCompleteListener<Uri>() {
             @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                // taskSnapshot.getMetadata() contains file metadata such as size, content-type, etc.
-                // ...
-                Log.d("SignUpActivity", "Image uploaded successfully");
-                addUser(userId, username, taskSnapshot.getMetadata().getPath());
+            public void onComplete(@NonNull Task<Uri> task) {
+                if (task.isSuccessful()) {
+                    Log.d("SignUpActivity", "Image uploaded successfully");
+                    addUser(userId, username,task.getResult().toString());
+                    Log.d("AvataradownloadURI?", task.getResult().toString());
+                } else {
+                    // Handle failures
+                    // ...
+                }
             }
         });
-
     }
 
 
