@@ -2,14 +2,17 @@ package mcc_2018_g15.chatapp;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,14 +26,16 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 public class SignUpActivity extends AppCompatActivity {
-
-
 
     //defining view objects
     private EditText editTextEmail, editTextPassword, editTextConfirmPassword, editTextUsername;
-
+    private ImageView imageViewAvatar;
     private ProgressDialog progressDialog;
+    public static final int PICK_IMAGE = 1;
 
 
     //defining firebaseauth object
@@ -52,9 +57,11 @@ public class SignUpActivity extends AppCompatActivity {
         editTextPassword = findViewById(R.id.editTextPassword);
         editTextConfirmPassword = findViewById(R.id.editTextConfirmPassword);
         editTextUsername = findViewById(R.id.editTextUsername);
+        imageViewAvatar = findViewById(R.id.imageViewAvatar);
 
         final TextView textViewSignin = findViewById(R.id.textViewSignin);
         final Button buttonSignup = findViewById(R.id.buttonSignup);
+
 
         progressDialog = new ProgressDialog(this);
 
@@ -72,11 +79,43 @@ public class SignUpActivity extends AppCompatActivity {
             }
         });
 
+        imageViewAvatar.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                chooseImage();
+            }
+        });
+
     }
 
     private void addUserToDatabase(String username, String imgUrl) {
         User newUser = new User(username, imgUrl, "full", "dark");
         usersRef.child(firebaseAuth.getUid()).setValue(newUser);
+    }
+
+    private void chooseImage() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        InputStream inputStream;
+        if (requestCode == PICK_IMAGE) {
+            Uri uri = data.getData();
+            if (uri != null) {
+                try {
+                    inputStream = getContentResolver().openInputStream(uri);
+                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                    Bitmap compressedBitmap = resizeBitmap(bitmap, 320);
+                    imageViewAvatar.setImageBitmap(compressedBitmap);
+                } catch (IOException e) {
+
+                }
+            }
+        }
+
     }
 
     private void registerUser(){
@@ -87,7 +126,7 @@ public class SignUpActivity extends AppCompatActivity {
         final String confirmPassword = editTextConfirmPassword.getText().toString().trim();
         final String username = editTextUsername.getText().toString().trim();
 
-        Log.d("firebasecheck", "reg user");
+
         if (!validateInput(email, password, confirmPassword, username)) {
             return;
         }
@@ -99,20 +138,10 @@ public class SignUpActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if(dataSnapshot.exists()){
-                    // use "username" already exists
-
-                    Log.d("firebasecheck", "if");
                     Toast.makeText(SignUpActivity.this,"Username doesn't exist"
                             ,Toast.LENGTH_SHORT).show();
-
-                    // Let the user know he needs to pick another username.
                 } else {
-                    // User does not exist. NOW call createUserWithEmailAndPassword
-                    Log.d("firebasecheck", "else");
-                    Log.d("firebasecheck", dataSnapshot.getValue().toString());
                     createUser(email, password);
-                    // Your previous code here.
-
                 }
                 progressDialog.dismiss();
             }
@@ -122,7 +151,21 @@ public class SignUpActivity extends AppCompatActivity {
 
             }
         });
+        progressDialog.dismiss();
+    }
 
+    private Bitmap resizeBitmap(Bitmap mBitMap, int maxSize) {
+        int width = mBitMap.getWidth();
+        int height = mBitMap.getHeight();
+        float bitmapRatio = (float)width / (float) height;
+        if (bitmapRatio > 1) {
+            width = maxSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            height = maxSize;
+            width = (int) (height * bitmapRatio);
+        }
+        return Bitmap.createScaledBitmap(mBitMap, width, height, true);
     }
 
 
