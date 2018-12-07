@@ -1,11 +1,14 @@
 package mcc_2018_g15.chatapp;
 
+import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Environment;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -14,15 +17,22 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
+import com.bumptech.glide.request.Request;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.SizeReadyCallback;
 import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -50,6 +60,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import mcc_2018_g15.chatapp.holders.CustomIncomingImageMessageViewHolder;
 import mcc_2018_g15.chatapp.holders.CustomIncomingTextMessageViewHolder;
 import mcc_2018_g15.chatapp.holders.CustomOutcomingImageMessageViewHolder;
@@ -75,6 +86,8 @@ public class MessageActivity extends AppCompatActivity {
     private static ImageLoader imageLoader;
     private static MessageInput inputView;
     private MessagesListAdapter<Message> adapter;
+    private static TextView userTitleTextView;
+    private static CircleImageView userImageView;
 
 
 
@@ -103,35 +116,78 @@ public class MessageActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messages);
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Main Page");
-        }
-        toolbar.setSubtitle("Test Subtitle");
-        toolbar.inflateMenu(R.menu.menu_message);
+        android.support.v7.app.ActionBar mActionBar = getSupportActionBar();
+        mActionBar.setDisplayHomeAsUpEnabled(false);
+        mActionBar.setDisplayShowTitleEnabled(false);
+        LayoutInflater mInflater = LayoutInflater.from(this);
 
-
+        View mCustomView = mInflater.inflate(R.layout.action_bar, null);
+        userTitleTextView = (TextView) mCustomView.findViewById(R.id.title_text);
+        userImageView = (CircleImageView) mCustomView.findViewById(R.id.actionBarImageView);
+        mActionBar.setCustomView(mCustomView);
+        mActionBar.setDisplayShowCustomEnabled(true);
 
         Intent intent = getIntent();
         CHAT_ID = intent.getStringExtra("chatId");
-        //CHAT_ID = "-LT8GobwwpIEVyopXG30";
         Log.d("chat_id", CHAT_ID);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             USER_ID = user.getUid();
             Log.d("UserID", USER_ID);
         }
+        final DatabaseReference chatsReference = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID).child("users");
+        final DatabaseReference userref = FirebaseDatabase.getInstance().getReference("users");
 
-        DatabaseReference userref = FirebaseDatabase.getInstance().getReference("users");
+
+        chatsReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                Log.e("Count ", "" + dataSnapshot.getChildrenCount());
+
+                if (dataSnapshot.getChildrenCount() == 2) {
+                    for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                        String member = postSnapshot.getKey();
+                        if (member != USER_ID) {
+                            userref.child(member).addValueEventListener(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                    String chatter = dataSnapshot.child("name").getValue(String.class);
+                                    userTitleTextView.setText(chatter);
+
+
+                                    String chatter_avatar = dataSnapshot.child("avatar").getValue(String.class);
+                                    Glide.with(MessageActivity.this).load(chatter_avatar).into(userImageView);
+                                    //Glide.with(MessageActivity.this).load(chatter_avatar).into(getSupportActionBar().set)
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                }
+                            });
+
+                        }
+
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
         userref.child(USER_ID).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 USERNAME = dataSnapshot.child("name").getValue(String.class);
                 AVATAR = dataSnapshot.child("avatar").getValue(String.class);
-                author = new Author(USER_ID,USERNAME,AVATAR);
+                author = new Author(USER_ID, USERNAME, AVATAR);
                 MessagesList messagesList = findViewById(R.id.messagesList);
 
                 CustomIncomingTextMessageViewHolder.Payload payload = new CustomIncomingTextMessageViewHolder.Payload();
@@ -158,16 +214,16 @@ public class MessageActivity extends AppCompatActivity {
                                 R.layout.item_custom_outcoming_image_message);
 
                 inputView = (MessageInput) findViewById(R.id.input);
-                 adapter = new MessagesListAdapter<>(author.getId(),holdersConfig, imageLoader);
+                adapter = new MessagesListAdapter<>(author.getId(), holdersConfig, imageLoader);
 
                 messagesList.setAdapter(adapter);
-                Log.d("username", USERNAME + ", "+ AVATAR);
+                Log.d("username", USERNAME + ", " + AVATAR);
                 inputView.setInputListener(new MessageInput.InputListener() {
                     @Override
                     public boolean onSubmit(CharSequence input) {
                         //validate and send message
 
-                        Message message = new Message(USER_ID, author, input.toString() );
+                        Message message = new Message(USER_ID, author, input.toString());
                         //Message rep_message = new Message("user_replier", zee, input.toString() + "'s reply");
                         myRef.push().setValue(message);
                         // myRef.push().setValue(rep_message);
@@ -184,13 +240,12 @@ public class MessageActivity extends AppCompatActivity {
                                 .setItems(R.array.view_types_dialog, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
-                                        if (i==0){
+                                        if (i == 0) {
                                             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                                             intent.addCategory(Intent.CATEGORY_OPENABLE);
                                             intent.setType("image/*");
                                             startActivityForResult(intent, REQUEST_IMAGE);
-                                        }
-                                        else {
+                                        } else {
                                             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
                                             // Ensure that there's a camera activity to handle the intent
@@ -232,19 +287,15 @@ public class MessageActivity extends AppCompatActivity {
         });
 
 
-
-
-
-
         database = FirebaseDatabase.getInstance();
         //TODO: Set to custom chat_id or make .push for new chat
         myRef = database.getReference().child("chat_msgs").child(CHAT_ID);
 
 
-         imageLoader = new ImageLoader() {
+        imageLoader = new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, @Nullable String url, @Nullable Object payload) {
-                if (url == LOADING_IMAGE_URL){
+                if (url == LOADING_IMAGE_URL) {
                     Picasso.get().load(LOADING_IMAGE_URL).into(imageView);
 
                 }
@@ -253,6 +304,7 @@ public class MessageActivity extends AppCompatActivity {
             }
 
         };
+
 
 
 
