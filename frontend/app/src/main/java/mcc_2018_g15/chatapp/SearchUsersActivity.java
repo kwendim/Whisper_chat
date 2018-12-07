@@ -1,5 +1,6 @@
 package mcc_2018_g15.chatapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +16,8 @@ import android.widget.TextView;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
@@ -23,8 +26,9 @@ import com.squareup.picasso.Picasso;
 public class SearchUsersActivity extends AppCompatActivity {
 
     private RecyclerView chatsList;
-    private DatabaseReference Databaza;
+    private DatabaseReference databaseReference;
     private Query query;
+    private FirebaseAuth firebaseAuth;
 
 
     @Override
@@ -33,11 +37,12 @@ public class SearchUsersActivity extends AppCompatActivity {
         setContentView(R.layout.activity_search_users);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        firebaseAuth = FirebaseAuth.getInstance();
 
         chatsList = (RecyclerView)findViewById(R.id.chats_list);
         chatsList.setHasFixedSize(true);
         chatsList.setLayoutManager(new LinearLayoutManager(this));
-        Databaza = FirebaseDatabase.getInstance().getReference().child("users");
+        databaseReference = FirebaseDatabase.getInstance().getReference().child("users");
 
         SearchView sv = (SearchView)findViewById(R.id.searchView);
         sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -65,6 +70,37 @@ public class SearchUsersActivity extends AppCompatActivity {
                     protected void onBindViewHolder(@NonNull chatViewHolder holder, int position, @NonNull User model) {
                         holder.setName(model.getName());
                         holder.setAvatar(model.getAvatar());
+
+                        final String USER_ID = firebaseAuth.getUid();
+                        final String userId = getRef(position).getKey();
+                        holder.view.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                databaseReference.child("chats").push()
+                                        .setValue("", new DatabaseReference.CompletionListener() {
+                                            @Override
+                                            public void onComplete(DatabaseError databaseError,
+                                                                   DatabaseReference databaseReference) {
+                                                String chatID = databaseReference.getKey();
+                                                if (false) {
+                                                    //databaseRef.child("chats").child(databaseReference.getKey()).child("dialogName").setValue("test");
+                                                    //databaseRef.child("chats").child(databaseReference.getKey()).child("dialogPhoto").setValue("test");
+                                                } else {
+                                                    databaseReference.child("chats").child(chatID).child("lastMessage").setValue("");
+                                                    databaseReference.child("chats").child(chatID).child("users").child(USER_ID).setValue("value");
+                                                    databaseReference.child("chats").child(chatID).child("users").child(userId).setValue("value");
+
+                                                    databaseReference.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
+                                                    databaseReference.child("users").child(userId).child("user_chats").child("chatID").setValue("admin");
+
+                                                    Intent chatIntent = new Intent(getBaseContext(), MessageActivity.class);
+                                                    chatIntent.putExtra("chatId", chatID);
+                                                    startActivity(chatIntent);
+                                                }
+                                            }
+                                        });
+                            }
+                        });
                     }
 
                     @Override

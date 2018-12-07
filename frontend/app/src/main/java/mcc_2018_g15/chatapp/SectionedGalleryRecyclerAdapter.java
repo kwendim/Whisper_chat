@@ -1,5 +1,6 @@
 package mcc_2018_g15.chatapp;
 
+import android.content.res.Configuration;
 import android.support.v7.widget.RecyclerView;
 
 
@@ -11,6 +12,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.imagepipeline.core.ImagePipelineConfig;
+import com.facebook.imagepipeline.decoder.SimpleProgressiveJpegConfig;
 
 import java.util.ArrayList;
 
@@ -42,6 +47,7 @@ public class SectionedGalleryRecyclerAdapter extends RecyclerView.Adapter<Sectio
 
     @Override
     public SectionViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_gallery, parent, false);
         return new SectionViewHolder(view);
     }
@@ -54,12 +60,15 @@ public class SectionedGalleryRecyclerAdapter extends RecyclerView.Adapter<Sectio
         //recycler view for items
         holder.imageRecyclerView.setHasFixedSize(true);
         holder.imageRecyclerView.setNestedScrollingEnabled(false);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(context, 4);
-        holder.imageRecyclerView.setLayoutManager(gridLayoutManager);
+        if(context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
+            holder.imageRecyclerView.setLayoutManager(new GridLayoutManager(context, 4));
+        }
+        else{
+            holder.imageRecyclerView.setLayoutManager(new GridLayoutManager(context, 8));
+        }
 
         ImageRecyclerViewAdapter adapter = new ImageRecyclerViewAdapter(context, sectionModel.getItemArrayList());
         holder.imageRecyclerView.setAdapter(adapter);
-
         //show toast on click of show all button
 
 

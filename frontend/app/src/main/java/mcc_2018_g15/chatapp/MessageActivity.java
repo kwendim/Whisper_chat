@@ -21,6 +21,8 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -56,10 +58,10 @@ public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
     private static final String CHAT_ID = "-LSAJSxZlW6W1Mw5Jd2y";
-    private static final String USER_ID = "user_id_1";
+    private static final String USER_ID = "user_id_2";
     private static int REQUEST_IMAGE = 1;
     private static int REQUEST_TAKE_PHOTO = 2;
-    final Author author = new Author(USER_ID,"kidus","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
+    final Author author = new Author(USER_ID,"shamimi","https://firebasestorage.googleapis.com/v0/b/mccchattest.appspot.com/o/chats%2F-LSAJSxZlW6W1Mw5Jd2y%2FIMG_20181127_223032?alt=media&token=4d53c1c3-6820-48fd-b52e-2df9575de104");
     DatabaseReference myRef;
     FirebaseDatabase database;
     private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
@@ -93,9 +95,6 @@ public class MessageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messages);
 
-
-
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -104,6 +103,11 @@ public class MessageActivity extends AppCompatActivity {
         }
         toolbar.setSubtitle("Test Subtitle");
         toolbar.inflateMenu(R.menu.menu_message);
+
+        Intent intent = getIntent();
+        String id = intent.getStringExtra("id");
+        String name = intent.getStringExtra("name");
+
 
 
 
@@ -119,7 +123,7 @@ public class MessageActivity extends AppCompatActivity {
                     Picasso.get().load(LOADING_IMAGE_URL).into(imageView);
 
                 }
-                Glide.with(imageView.getContext()).load(url).into(imageView);
+                Glide.with(MessageActivity.this).load(url).apply(new RequestOptions().fitCenter()).into(imageView);
                 //Picasso.get().load(url).into(imageView);
             }
 
@@ -176,6 +180,7 @@ public class MessageActivity extends AppCompatActivity {
                 if (dataSnapshot.hasChildren()) {
                     Log.d("onchildchanged", "hasbeencalled");
                     Message new_message = dataSnapshot.getValue(Message.class);
+
                     Author new_author = dataSnapshot.child("user").getValue(Author.class);
                     new_message.setUser(new_author);
                     Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
@@ -195,8 +200,6 @@ public class MessageActivity extends AppCompatActivity {
             public void onCancelled(DatabaseError databaseError) {}
 
         });
-
-
 
 
         inputView.setInputListener(new MessageInput.InputListener() {
@@ -301,7 +304,7 @@ private void storeTemporaryImage(final DatabaseReference dbReference,final Uri u
     tempMessage.setImage(new_img);
 
     String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-    final String imageFileName = "IMG_" + timeStamp ;
+    final String imageFileName = "IMG_" + timeStamp + ".jpg" ;
 
 
     dbReference.push()
@@ -345,34 +348,20 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
         public void onComplete(@NonNull Task<Uri> task) {
             if (task.isSuccessful()) {
                 final Uri downloadUri = task.getResult();
-                Message.Image up_img= new Message.Image(downloadUri.toString());
+                Message.Image up_img = new Message.Image(downloadUri.toString());
                 Message message_update =
                         new Message(USER_ID, author, null);
                 message_update.setImage(up_img);
                 myRef.child(key)
                         .setValue(message_update);
 
-//                SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.US);
-//                Date now = new Date();
-//                String fileName = formatter.format(now) + ".tar.gz";
-                //TODO: Remove this part right here
-                final DatabaseReference imageurls = FirebaseDatabase.getInstance().getReference("imageursl");
-                imageurls.child(CHAT_ID).child(key).setValue(downloadUri.toString()).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e("imageurlFailure", e.toString());
-                    }
-                });
-
-                Log.d("downloadURI?" , downloadUri.toString());
+                Log.d("downloadURI?", downloadUri.toString());
             } else {
                 // Handle failures
                 // ...
             }
         }
-
-
-            });
+    });
 }
 
     private File createImageFile() throws IOException {
@@ -392,16 +381,6 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
             Log.e("fileException", e.toString());
             return null;
         }
-
-//
-//        File image = File.createTempFile(
-//                imageFileName,  /* prefix */
-//                ".jpg",storageDir        /* suffix */
-//        );
-
-        // Save a file: path for use with ACTION_VIEW intents
-
     }
-
 
 }

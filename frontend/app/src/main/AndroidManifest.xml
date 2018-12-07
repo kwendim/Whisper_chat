@@ -19,7 +19,16 @@
         <activity
             android:name=".MessageActivity"
             android:label="Message Activity"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/AppTheme.NoActionBar" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+
         <activity
             android:name=".SearchUsersActivity"
             android:label="@string/title_activity_search_users"
@@ -35,14 +44,14 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity android:name=".GalleryActivity" />
-        <activity android:name=".LoginActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+        <activity android:name=".GalleryActivity"
+                  android:theme="@style/AppTheme.NoActionBar" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        <activity android:name=".LoginActivity">
+
         </activity>
+
+
         <activity android:name=".SignUpActivity"></activity>
 
         <service android:name=".MyFirebaseMessagingService">
