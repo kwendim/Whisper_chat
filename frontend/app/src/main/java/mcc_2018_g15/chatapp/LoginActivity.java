@@ -79,6 +79,11 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            Toast.makeText(this,"Please enter a valid email address",Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         //if the email and password are not empty
         //displaying a progress dialog
 
@@ -98,7 +103,7 @@ public class LoginActivity extends AppCompatActivity {
                             finish();
                         }
                         else {
-                            Toast.makeText(LoginActivity.this,"Login failed.",Toast.LENGTH_LONG).show();
+                            Toast.makeText(LoginActivity.this,task.getException().getMessage(),Toast.LENGTH_LONG).show();
                         }
                     }
                 });
