@@ -67,7 +67,6 @@ import mcc_2018_g15.chatapp.holders.CustomOutcomingImageMessageViewHolder;
 import mcc_2018_g15.chatapp.holders.CustomOutcomingTextMessageViewHolder;
 
 
-//TODO: implement name/image along with each message
 public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
@@ -288,7 +287,6 @@ public class MessageActivity extends AppCompatActivity {
 
 
         database = FirebaseDatabase.getInstance();
-        //TODO: Set to custom chat_id or make .push for new chat
         myRef = database.getReference().child("chat_msgs").child(CHAT_ID);
 
 
@@ -312,7 +310,6 @@ public class MessageActivity extends AppCompatActivity {
 
 
 //TODO: HANDLE NEW CHATS WITH THIS EVENT LISTENER.
-        //TODO: get authors from the user table
         myRef.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {

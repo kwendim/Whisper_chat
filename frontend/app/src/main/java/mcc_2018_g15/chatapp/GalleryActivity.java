@@ -44,7 +44,6 @@ import android.os.Bundle;
 
 //TODO: Orientation change closes the viewer. Back Button for view. Implement Download of images. (Maybe) Ability to navigate
 // through all images when opening one.
-//TODO: It takes a long time to load the images
 public class GalleryActivity extends AppCompatActivity {
     RecyclerView galleryRecycler;
     private static String CHAT_ID ;
@@ -210,7 +209,7 @@ public class GalleryActivity extends AppCompatActivity {
         });
     }
 
-    private void getAllImages_user() {//TODO get user name from users table
+    private void getAllImages_user() {
         DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
         final Map<String,ArrayList<String>> image_sorter = new HashMap<>();
         final DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
