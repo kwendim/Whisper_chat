@@ -13,7 +13,6 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 
-import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -58,7 +57,7 @@ public class DialogsActivity extends AppCompatActivity{
             @Override
             public void loadImage(ImageView imageView, @Nullable String url, @Nullable Object payload) {
                 try {
-                    Glide.with(getApplicationContext()).load(url).into(imageView);
+                    Picasso.get().load(url).into(imageView);
                 }catch(Exception e){
 
                 }
@@ -89,7 +88,7 @@ public class DialogsActivity extends AppCompatActivity{
                 // TODO: 11/24/2018 Order by date
                 DatabaseReference chatsRef = database.getReference().child("chats").child(dataSnapshot.getKey());
                 Dialog new_dialog = new Dialog(dataSnapshot.getKey(), "","",
-                                new ArrayList<Author>(), new Message("id", new Author("","","http://i.imgur.com/mRqh5w1.png"), "", calendar.getTime()), 0);
+                        new ArrayList<Author>(), new Message("id", new Author("","","http://i.imgur.com/mRqh5w1.png"), "", calendar.getTime()), 0);
                 dialogsListAdapter.addItem(0,new_dialog);
                 chatsRef.addValueEventListener(new ValueEventListener() {
                     @Override
@@ -118,9 +117,9 @@ public class DialogsActivity extends AppCompatActivity{
 //                                        usernames.remove(index[0]);
 //                                        usernames.add(index[0], usersDataSnapshot.child("username").getValue().toString());
 //                                    }else{
-                                        if(!usersDataSnapshot.getKey().equals(USER_ID)||chatsDataSnapshot.child("users").getChildrenCount()==1)
-                                            usernames.add(usersDataSnapshot.child("name").getValue().toString());
-                                        authorsList.add(new Author(usersDataSnapshot.getKey(), usersDataSnapshot.child("name").getValue().toString(), usersDataSnapshot.child("avatar").getValue().toString()));
+                                    if(!usersDataSnapshot.getKey().equals(USER_ID)||chatsDataSnapshot.child("users").getChildrenCount()==1)
+                                        usernames.add(usersDataSnapshot.child("name").getValue().toString());
+                                    authorsList.add(new Author(usersDataSnapshot.getKey(), usersDataSnapshot.child("name").getValue().toString(), usersDataSnapshot.child("avatar").getValue().toString()));
 //                                        index[0]++;
 //                                    }
 
