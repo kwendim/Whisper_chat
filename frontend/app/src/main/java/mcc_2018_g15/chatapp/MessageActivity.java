@@ -346,15 +346,16 @@ public class MessageActivity extends AppCompatActivity {
                 if (isLeavingChat) {
                     return;
                 }
-                if (isLoading != null) {
-                    if (isLoading.equals(LOADING_IMAGE_URL) && new_author.getId() != USER_ID) {
-                    } else {
-                        adapter.addToStart(new_message, true);
-
-                    }
-                } else {
-                    adapter.addToStart(new_message, true);
-                }
+                adapter.addToStart(new_message,true);
+//                if (isLoading != null) {
+//                    if (isLoading.equals(LOADING_IMAGE_URL) && new_author.getId() != USER_ID) {
+//                    } else {
+//                        adapter.addToStart(new_message, true);
+//
+//                    }
+//                } else {
+//                    adapter.addToStart(new_message, true);
+//                }
                 }
 
             }
@@ -370,12 +371,13 @@ public class MessageActivity extends AppCompatActivity {
                     Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
                     new_message.setImage(new_image);
                     Log.d("boutotloadimage: ", "right here + " + prevChildKey);
-                    if(new_author.getId().equals(USER_ID)) {
-                        adapter.update(new_message);
-                    }
-                    else{
-                        adapter.addToStart(new_message,true);
-                    }
+                    adapter.update(new_message);
+//                    if(new_author.getId().equals(USER_ID)) {
+//                        adapter.update(new_message);
+//                    }
+//                    else{
+//                        adapter.addToStart(new_message,true);
+//                    }
                 }
             }
 

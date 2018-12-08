@@ -223,9 +223,9 @@ public class SearchUsersActivity extends AppCompatActivity {
                     chatsRef.child(child.getKey()).addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            isGroup = (boolean) dataSnapshot.child("isGroup").getValue();
+                            boolean isGroupChat = (boolean) dataSnapshot.child("isGroup").getValue();
 
-                            if (!isGroup) {
+                            if (!isGroupChat) {
                                 for (DataSnapshot user : dataSnapshot.child("users").getChildren()) {
                                     if (!user.getKey().equals(USER_ID)) {
                                         usersChats.add(dataSnapshot.getKey());
