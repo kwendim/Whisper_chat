@@ -27,6 +27,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -93,9 +95,26 @@ public class SignUpActivity extends AppCompatActivity {
 
     }
 
-    private void addUser(String userId, String username, String imgUrl) {
+    private void addUser(final String userId, String username, String imgUrl) {
         User newUser = new User(username, imgUrl, "full", "dark");
         usersRef.child(userId).setValue(newUser);
+
+        // Add fcm token for notifications
+        FirebaseInstanceId.getInstance().getInstanceId()
+                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w("FCM reg", "getInstanceId failed", task.getException());
+                            return;
+                        }
+
+                        // Get new Instance ID token
+                        String fcm_token = task.getResult().getToken();
+                        Log.d("what happened" + " UserID", fcm_token);
+                        usersRef.child(userId).child("fcm_token").setValue(fcm_token);
+                    }
+                });
     }
 
     private void chooseImage() {

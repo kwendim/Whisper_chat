@@ -46,16 +46,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void sendRegistrationToServer(String token) {
-        // TODO: Implement this method to send token to your app server.
+        // Send token to your app server.
         String uid = "";
-
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             uid = user.getUid();
-            Log.d("UserID", uid);
+            Log.d(TAG + " UserID", uid);
+            DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference().child("users").child(uid);
+            dbRef.child("fcm_token").setValue(token);
         }
-
-        DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference().child("users").child(uid);
-        dbRef.child("token").setValue(token);
     }
 }

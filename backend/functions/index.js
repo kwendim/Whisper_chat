@@ -78,20 +78,26 @@ exports.addMessage = functions.https.onRequest((req, res) => {
               // const response = await admin.messaging().sendToDevice(token, payload);
               // Get the list of device tokens.
               // const allTokens = await admin.database().ref('').once('value');
-              const allMembers = await admin.database().ref(`/chats/${context.params.chat_id}/memId`).once('value');
+              const allMembers = await admin.database().ref(`/chats/${context.params.chat_id}/users`).once('value');
               console.log("allMembers : " + allMembers.val());
               if (allMembers.exists()) {
                 // Listing all device tokens to send a notification to.
-                // const allMembersIds = Object.keys(allMembers.val());
-                const allMembersIds = [allMembers.val()];
+                const allMembersIds = Object.keys(allMembers.val());
+                // const allMembersIds = [allMembers.val()];
                 console.log("allMembersIds : " + allMembersIds);
+
+                var selfIndex = allMembersIds.indexOf(snapshot.val().id);
+                allMembersIds.splice(selfIndex,1);
+
+                console.log("allMembersIds without self : " + allMembersIds);
 
                 var tokens = [];
                 for (const memId of allMembersIds)  {
                   console.log(" memId : " + memId);
-                  var tokenObject = await admin.database().ref(`/users/${memId}/token`).once('value');
-                  console.log("tok : " + tokenObject.val());
-                  tokens.push(tokenObject.val());
+                  var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
+                  var fcm_token = tokenObject.val();
+                  console.log("tok : " + fcm_token);
+                  tokens.push(fcm_token);
                 }
                 console.log("Tokens : " + tokens);
                 // Send notifications to all tokens.
