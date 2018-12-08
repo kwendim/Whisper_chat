@@ -70,16 +70,18 @@ exports.addMessage = functions.https.onRequest((req, res) => {
               // Notification details.
               const title = snapshot.val().user.name;
               const text = snapshot.val().text;
+              const small_text = text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '' ;
               const payload = {
                 notification: {
                   title: `${title} posted ${text ? 'a message' : 'an image'}`,
-                  body: text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '',
+                  body: `${title} : ${small_text}`,
                   icon: snapshot.val().user.avatar || '/images/profile_placeholder.png',
                   click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
                 },
                 data : {
-                  "picture_url" : snapshot.val().imageurl && snapshot.val().imageurl.url,
-                  "avatar" : snapshot.val().user.avatar
+                  "picture_url" : snapshot.val().imageurl ? snapshot.val().imageurl.url : "",
+                  "avatar" : snapshot.val().user.avatar,
+                  "big_text" : text ? text : "",
                 }
 
               };
@@ -128,6 +130,10 @@ exports.addMessage = functions.https.onRequest((req, res) => {
                   const snapshot = await admin.database().ref(`/chats/${context.params.chat_id}`).once('value');
 
                   if(!snapshot.val().isGroup) {
+                    return null;
+                  }
+
+                  if(snapshot.val().admin == context.params.user_id) {
                     return null;
                   }
 
