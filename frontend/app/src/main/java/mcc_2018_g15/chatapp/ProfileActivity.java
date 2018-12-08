@@ -39,6 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private static final int PICK_IMAGE = 1;
     private DatabaseReference usersRef;
+    private DatabaseReference databaseRef;
     private EditText editTextUsername;
     private ImageView imageViewAvatar;
     private ProgressDialog progressDialog;
@@ -46,11 +47,18 @@ public class ProfileActivity extends AppCompatActivity {
     private String orgAvatarUri;
     private String orgUsername;
     private String userId;
+    private String callingActivity = "";
+    private String chatId = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+
+        databaseRef = FirebaseDatabase.getInstance().getReference();
+        Intent intent = getIntent();
+        if (intent.hasExtra("callingActivity"))
+            callingActivity = intent.getStringExtra("callingActivity");
 
         userId = FirebaseAuth.getInstance().getUid();
         editTextUsername = findViewById(R.id.editTextUsername);
@@ -58,9 +66,15 @@ public class ProfileActivity extends AppCompatActivity {
         final Button buttonSave = findViewById(R.id.buttonSave);
         usersRef = FirebaseDatabase.getInstance().getReference().child("users");
 
+        if (callingActivity.equals("SearchUsersActivity")) {
+            editTextUsername.setHint("Group name");
+            if (intent.hasExtra("chatId"))
+                chatId = intent.getStringExtra("chatId");
+        } else {
+            getProfileData();
+        }
         progressDialog = new ProgressDialog(this);
 
-        getProfileData();
         imageViewAvatar.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
                 chooseImage();
@@ -68,9 +82,69 @@ public class ProfileActivity extends AppCompatActivity {
         });
         buttonSave.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
-                updateUser();
+                if (callingActivity.equals("SearchUsersActivity"))
+                    saveGroupInfo();
+                else
+                    updateUser();
             }
         });
+
+
+    }
+
+    private void saveGroupInfo() {
+        final String newUsername = editTextUsername.getText().toString().trim();
+        progressDialog.setMessage("Saving");
+        progressDialog.show();
+        if (updatedAvatarUri != null) {
+            final StorageReference storageReference =
+                    FirebaseStorage.getInstance()
+                            .getReference("chats")
+                            .child(chatId)
+                            .child("dialogPhoto");
+
+            UploadTask uploadTask = storageReference.putFile(updatedAvatarUri);
+
+            Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    // Continue with the task to get the download URL
+
+                    return storageReference.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if (task.isSuccessful()) {
+//                        User newUser = new User(username, orgAvatarUri, "full", "dark");
+//                        usersRef.child(userId).setValue(newUser);
+                        databaseRef.child("chats").child(chatId).child("dialogName").setValue(newUsername);
+                        databaseRef.child("chats").child(chatId).child("dialogPhoto").setValue(task.getResult().toString());
+                        progressDialog.dismiss();
+                        Intent chatIntent = new Intent(ProfileActivity.this, MessageActivity.class);
+                        chatIntent.putExtra("chatId", chatId);
+                        startActivity(chatIntent);
+
+                        finish();
+
+                    }
+                    progressDialog.dismiss();
+                }
+            });
+        } else {
+            databaseRef.child("chats").child(chatId).child("dialogName").setValue(newUsername);
+            databaseRef.child("chats").child(chatId).child("dialogPhoto").setValue("https://firebasestorage.googleapis.com/v0/b/mcc-fall-2018-g15.appspot.com/o/group_deault.jpg?alt=media&token=74147f81-2acd-4166-aa2e-434fe1f34be6");
+            progressDialog.dismiss();
+            Intent chatIntent = new Intent(ProfileActivity.this, MessageActivity.class);
+            chatIntent.putExtra("chatId", chatId);
+            startActivity(chatIntent);
+
+            finish();
+        }
     }
 
     private void chooseImage() {
@@ -133,6 +207,47 @@ public class ProfileActivity extends AppCompatActivity {
                 });
 
             }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                progressDialog.dismiss();
+            }
+        });
+    }
+
+    // TODO: 12/8/2018 Remove if still not used 
+    private void getGroupData() {
+        progressDialog.setMessage("Loading");
+        progressDialog.show();
+        usersRef.child(userId).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                orgUsername = snapshot.child("name").getValue().toString();
+                editTextUsername.setText(orgUsername);
+                editTextUsername.setSelection(editTextUsername.getText().length());
+
+                orgAvatarUri = snapshot.child("avatar").getValue().toString();
+                StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(orgAvatarUri);
+
+                httpsReference.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                    @Override
+                    public void onSuccess(byte[] bytes) {
+
+                        Bitmap avatarBmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        imageViewAvatar.setImageBitmap(Bitmap.createScaledBitmap(avatarBmp, imageViewAvatar.getWidth(),
+                                imageViewAvatar.getHeight(), false));
+                        progressDialog.dismiss();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        // Handle any errors
+                        progressDialog.dismiss();
+                    }
+                });
+
+            }
+
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 progressDialog.dismiss();
@@ -143,7 +258,7 @@ public class ProfileActivity extends AppCompatActivity {
     private Bitmap resizeBitmap(Bitmap mBitMap, int maxSize) {
         int width = mBitMap.getWidth();
         int height = mBitMap.getHeight();
-        float bitmapRatio = (float)width / (float) height;
+        float bitmapRatio = (float) width / (float) height;
         if (bitmapRatio > 1) {
             width = maxSize;
             height = (int) (width / bitmapRatio);
@@ -188,8 +303,7 @@ public class ProfileActivity extends AppCompatActivity {
                     progressDialog.dismiss();
                 }
             });
-        }
-        else {
+        } else {
             User newUser = new User(username, orgAvatarUri, "full", "dark");
             usersRef.child(userId).setValue(newUser);
             progressDialog.dismiss();
@@ -201,8 +315,8 @@ public class ProfileActivity extends AppCompatActivity {
     private void updateUser() {
         final String newUsername = editTextUsername.getText().toString().trim();
 
-        if(TextUtils.isEmpty(newUsername)){
-            Toast.makeText(this,"Please enter username",Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(newUsername)) {
+            Toast.makeText(this, "Please enter username", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -219,9 +333,9 @@ public class ProfileActivity extends AppCompatActivity {
         usersRef.orderByChild("name").equalTo(newUsername).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if(dataSnapshot.exists() && !newUsername.equals(orgUsername)) {
-                    Toast.makeText(ProfileActivity.this,"Username doesn't exist"
-                            ,Toast.LENGTH_SHORT).show();
+                if (dataSnapshot.exists() && !newUsername.equals(orgUsername)) {
+                    Toast.makeText(ProfileActivity.this, "Username doesn't exist"
+                            , Toast.LENGTH_SHORT).show();
 
                 } else {
                     updatedUserNameAndPhoto(newUsername, updatedAvatarUri);
@@ -234,6 +348,5 @@ public class ProfileActivity extends AppCompatActivity {
                 progressDialog.dismiss();
             }
         });
-
     }
 }

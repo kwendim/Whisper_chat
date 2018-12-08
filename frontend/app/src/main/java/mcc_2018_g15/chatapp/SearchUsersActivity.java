@@ -17,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
@@ -94,7 +95,7 @@ public class SearchUsersActivity extends AppCompatActivity {
                         holder.setAvatar(model.getAvatar());
 
                         final String userId = getRef(position).getKey();
-                        if(isGroup) {
+                        if (isGroup) {
                             holder.setCheckboxVisibility(View.VISIBLE);
 
                             if (groupMembers.contains(userId)) {
@@ -103,8 +104,7 @@ public class SearchUsersActivity extends AppCompatActivity {
                             } else {
                                 holder.setCheckbox(false);
                             }
-                        }
-                        else {
+                        } else {
                             holder.setCheckboxVisibility(View.GONE);
                         }
                         holder.view.setOnClickListener(new View.OnClickListener() {
@@ -139,8 +139,8 @@ public class SearchUsersActivity extends AppCompatActivity {
                                                         String chatID = databaseReference.getKey();
                                                         chatsRef.child(chatID).child("lastMessage").setValue("");
                                                         chatsRef.child(chatID).child("isGroup").setValue(false);
-                                                        chatsRef.child(chatID).child("users").child(USER_ID).setValue("value");
-                                                        chatsRef.child(chatID).child("users").child(userId).setValue("value");
+                                                        chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
+                                                        chatsRef.child(chatID).child("users").child(userId).setValue(System.currentTimeMillis());
                                                         chatsRef.child(chatID).child("admin").setValue(USER_ID);
                                                         databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
                                                         databaseRef.child("users").child(userId).child("user_chats").child(chatID).setValue("admin");
@@ -196,19 +196,17 @@ public class SearchUsersActivity extends AppCompatActivity {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                             boolean isGroup = false;
-                            try{
-                                isGroup = (boolean) dataSnapshot.child("isGroup").getValue();
-                            }catch(Exception e) {
-                                if (!isGroup) {
-                                    for (DataSnapshot user : dataSnapshot.child("users").getChildren()) {
-                                        if (!user.getKey().equals(USER_ID)) {
-                                            usersChats.add(dataSnapshot.getKey());
-                                            connectedPeople.add(user.getKey());
-                                        }
-                                        if (dataSnapshot.child("users").getChildrenCount() == 1) {
-                                            usersChats.add(dataSnapshot.getKey());
-                                            connectedPeople.add(user.getKey());
-                                        }
+                            isGroup = (boolean) dataSnapshot.child("isGroup").getValue();
+
+                            if (!isGroup) {
+                                for (DataSnapshot user : dataSnapshot.child("users").getChildren()) {
+                                    if (!user.getKey().equals(USER_ID)) {
+                                        usersChats.add(dataSnapshot.getKey());
+                                        connectedPeople.add(user.getKey());
+                                    }
+                                    if (dataSnapshot.child("users").getChildrenCount() == 1) {
+                                        usersChats.add(dataSnapshot.getKey());
+                                        connectedPeople.add(user.getKey());
                                     }
                                 }
                             }
@@ -240,22 +238,23 @@ public class SearchUsersActivity extends AppCompatActivity {
                                 String chatID = databaseReference.getKey();
                                 chatsRef.child(chatID).child("lastMessage").setValue("");
                                 chatsRef.child(chatID).child("isGroup").setValue(true);
-                                chatsRef.child(chatID).child("users").child(USER_ID).setValue("value");
+                                chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
                                 chatsRef.child(chatID).child("admin").setValue(USER_ID);
                                 databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
-                                for(int i=0; i<groupMembers.size(); i++){
-                                    chatsRef.child(chatID).child("users").child(groupMembers.get(i)).setValue("value");
+                                for (int i = 0; i < groupMembers.size(); i++) {
+                                    chatsRef.child(chatID).child("users").child(groupMembers.get(i)).setValue(System.currentTimeMillis());
                                     databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatID).setValue("admin");
                                 }
-                                Intent chatIntent = new Intent(getBaseContext(), MessageActivity.class);
+                                Intent chatIntent = new Intent(getBaseContext(), ProfileActivity.class);
                                 chatIntent.putExtra("chatId", chatID);
+                                chatIntent.putExtra("callingActivity", "SearchUsersActivity");
                                 startActivity(chatIntent);
                             }
                         });
             }
         });
 
-        if(isGroup){
+        if (isGroup) {
             btnCreateGroup.setVisibility(View.VISIBLE);
         } else {
             btnCreateGroup.setVisibility(View.GONE);
@@ -280,7 +279,7 @@ public class SearchUsersActivity extends AppCompatActivity {
 
         public void setAvatar(String url) {
             ImageView avatarIV = (ImageView) view.findViewById(R.id.avatar_iv);
-            Picasso.get().load(url).into(avatarIV);
+            Glide.with(avatarIV.getContext()).load(url).into(avatarIV);
         }
 
         public void setName(String lastMessage) {
