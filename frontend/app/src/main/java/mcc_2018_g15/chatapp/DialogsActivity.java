@@ -117,8 +117,8 @@ public class DialogsActivity extends AppCompatActivity{
 //                                        usernames.remove(index[0]);
 //                                        usernames.add(index[0], usersDataSnapshot.child("username").getValue().toString());
 //                                    }else{
-//                                    if(!usersDataSnapshot.getKey().equals(USER_ID)||chatsDataSnapshot.child("users").getChildrenCount()==1)
-//                                        usernames.add(usersDataSnapshot.child("name").getValue().toString());
+                                    if(!usersDataSnapshot.getKey().equals(USER_ID)||chatsDataSnapshot.child("users").getChildrenCount()==1)
+                                        usernames.add(usersDataSnapshot.child("name").getValue().toString());
                                     authorsList.add(new Author(usersDataSnapshot.getKey(), usersDataSnapshot.child("name").getValue().toString(), usersDataSnapshot.child("avatar").getValue().toString()));
 //                                        index[0]++;
 //                                    }
@@ -245,7 +245,6 @@ public class DialogsActivity extends AppCompatActivity{
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
-
                 dialogsListAdapter.deleteById(dataSnapshot.getKey());
             }
 
