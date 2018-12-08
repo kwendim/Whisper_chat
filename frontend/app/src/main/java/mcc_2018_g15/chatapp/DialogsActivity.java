@@ -134,16 +134,25 @@ public class DialogsActivity extends AppCompatActivity{
 //                                    Log.e("!_@@_LastMessageURL::>", lastMessage.getUser().getAvatar());
 //                                    Message msg = new Message("id", new Author("user_id","","http://i.imgur.com/mRqh5w1.png"), dialog.getLastMessage().getText(), calendar.getTime());
                                     String chatImage = "";
-                                    try {
-                                        if ((boolean) chatsDataSnapshot.child("isGroup").getValue()) {
-                                            chatImage = dialog.getDialogPhoto();
-                                        } else if (!usersDataSnapshot.getKey().equals(USER_ID)) {
-                                            chatImage = usersDataSnapshot.child("avatar").getValue().toString();
-                                        }
-                                    } catch(Exception e){
+
+
+                                    String dialogName = TextUtils.join(", ", usernames);
+                                    Log.e(TAG, "onDataChange: " + chatsDataSnapshot.child("isGroup").getValue());
+                                    Log.e(TAG, "onDataChange: " + (Boolean)chatsDataSnapshot.child("isGroup").getValue());
+                                    if((Boolean) chatsDataSnapshot.child("isGroup").getValue()) {
+                                        try {
+                                            if (!chatsDataSnapshot.child("dialogName").getValue().toString().equals(""))
+                                                dialogName = chatsDataSnapshot.child("dialogName").getValue().toString();
+                                        } catch (Exception e) { }
+                                        try {
+                                            if (!chatsDataSnapshot.child("dialogPhoto").getValue().toString().equals(""))
+                                                chatImage = chatsDataSnapshot.child("dialogPhoto").getValue().toString();
+                                        } catch (Exception e) { }
+                                    }
+                                    if (chatsDataSnapshot.child("users").getChildrenCount()<3) {
                                         chatImage = usersDataSnapshot.child("avatar").getValue().toString();
                                     }
-                                    Dialog dlg = new Dialog(dialog.getId(), chatImage, TextUtils.join(", ", usernames), authorsList, lastMessage, dialog.getUnreadCount());
+                                    Dialog dlg = new Dialog(dialog.getId(), chatImage, dialogName, authorsList, lastMessage, dialog.getUnreadCount());
                                     dialogsListAdapter.updateItemById(dlg);
                                 }
 
