@@ -3,6 +3,7 @@ package mcc_2018_g15.chatapp;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -42,7 +43,10 @@ public class SearchUsersActivity extends AppCompatActivity {
     private ArrayList<String> usersChats = new ArrayList<>();
     private ArrayList<String> connectedPeople = new ArrayList<>();
     private ArrayList<String> groupMembers = new ArrayList<>();
+    private ArrayList<String> previousMembers = new ArrayList<>();
     FirebaseAuth firebaseAuth;
+    boolean isAddingMember = false;
+    String chatId = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,8 +58,21 @@ public class SearchUsersActivity extends AppCompatActivity {
         firebaseAuth = FirebaseAuth.getInstance();
         USER_ID = firebaseAuth.getUid();
 
+        btnCreateGroup = (Button) findViewById(R.id.btnCreateGroup);
+
         Intent intent = getIntent();
-        isGroup = intent.getBooleanExtra("isGroup", false);
+        if (intent.hasExtra("isGroup"))
+            isGroup = intent.getBooleanExtra("isGroup", false);
+        if (intent.hasExtra("addMember")) {
+            isAddingMember = intent.getBooleanExtra("addMember", false);
+            chatId = intent.getStringExtra("chatId");
+
+            if (isAddingMember) {
+                isGroup = true;
+                btnCreateGroup.setText("Add members");
+            }
+        }
+
         chatsList = (RecyclerView) findViewById(R.id.chats_list);
         chatsList.setHasFixedSize(true);
         chatsList.setLayoutManager(new LinearLayoutManager(this));
@@ -65,6 +82,7 @@ public class SearchUsersActivity extends AppCompatActivity {
         DatabaseReference usersRef = databaseRef.child("users");
         DatabaseReference usersChatsRef = usersRef.child(USER_ID).child("user_chats");
         final DatabaseReference chatsRef = databaseRef.child("chats");
+
 
 
         SearchView sv = (SearchView) findViewById(R.id.searchView);
@@ -195,7 +213,6 @@ public class SearchUsersActivity extends AppCompatActivity {
                     chatsRef.child(child.getKey()).addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            boolean isGroup = false;
                             isGroup = (boolean) dataSnapshot.child("isGroup").getValue();
 
                             if (!isGroup) {
@@ -226,31 +243,50 @@ public class SearchUsersActivity extends AppCompatActivity {
             }
         });
 
-        btnCreateGroup = (Button) findViewById(R.id.btnCreateGroup);
+
         btnCreateGroup.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                chatsRef.push()
-                        .setValue("", new DatabaseReference.CompletionListener() {
-                            @Override
-                            public void onComplete(DatabaseError databaseError,
-                                                   DatabaseReference databaseReference) {
-                                String chatID = databaseReference.getKey();
-                                chatsRef.child(chatID).child("lastMessage").setValue("");
-                                chatsRef.child(chatID).child("isGroup").setValue(true);
-                                chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
-                                chatsRef.child(chatID).child("admin").setValue(USER_ID);
-                                databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
-                                for (int i = 0; i < groupMembers.size(); i++) {
-                                    chatsRef.child(chatID).child("users").child(groupMembers.get(i)).setValue(System.currentTimeMillis());
-                                    databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatID).setValue("admin");
+            public void onClick(final View view) {
+                if (isAddingMember) {
+                    for (int i = 0; i < groupMembers.size(); i++) {
+                        if(!previousMembers.contains(groupMembers.get(i))) {
+                            chatsRef.child(chatId).child("users").child(groupMembers.get(i)).setValue(System.currentTimeMillis());
+                            databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatId).setValue("admin");
+                        }
+                    }
+                    for(int i=0; i<previousMembers.size(); i++){
+                        if(!groupMembers.contains(previousMembers.get(i))){
+                            chatsRef.child(chatId).child("users").child(groupMembers.get(i)).removeValue();
+                            databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatId).removeValue();
+                        }
+                    }
+                } else {
+                    chatsRef.push()
+                            .setValue("", new DatabaseReference.CompletionListener() {
+                                @Override
+                                public void onComplete(DatabaseError databaseError,
+                                                       DatabaseReference databaseReference) {
+                                    if (groupMembers.size() < 3) {
+                                        Snackbar.make(view, "Please select at least three people!", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                                        return;
+                                    }
+                                    String chatID = databaseReference.getKey();
+                                    chatsRef.child(chatID).child("lastMessage").setValue("");
+                                    chatsRef.child(chatID).child("isGroup").setValue(true);
+                                    chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
+                                    chatsRef.child(chatID).child("admin").setValue(USER_ID);
+                                    databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
+                                    for (int i = 0; i < groupMembers.size(); i++) {
+                                        chatsRef.child(chatID).child("users").child(groupMembers.get(i)).setValue(System.currentTimeMillis());
+                                        databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatID).setValue("admin");
+                                    }
+                                    Intent chatIntent = new Intent(getBaseContext(), ProfileActivity.class);
+                                    chatIntent.putExtra("chatId", chatID);
+                                    chatIntent.putExtra("callingActivity", "SearchUsersActivity");
+                                    startActivity(chatIntent);
                                 }
-                                Intent chatIntent = new Intent(getBaseContext(), ProfileActivity.class);
-                                chatIntent.putExtra("chatId", chatID);
-                                chatIntent.putExtra("callingActivity", "SearchUsersActivity");
-                                startActivity(chatIntent);
-                            }
-                        });
+                            });
+                }
             }
         });
 
@@ -258,6 +294,23 @@ public class SearchUsersActivity extends AppCompatActivity {
             btnCreateGroup.setVisibility(View.VISIBLE);
         } else {
             btnCreateGroup.setVisibility(View.GONE);
+        }
+
+        if(isAddingMember){
+            chatsRef.child(chatId).child("users").addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    for(DataSnapshot user : dataSnapshot.getChildren()){
+                        previousMembers.add(user.getKey());
+                        groupMembers.add(user.getKey());
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
         }
     }
 

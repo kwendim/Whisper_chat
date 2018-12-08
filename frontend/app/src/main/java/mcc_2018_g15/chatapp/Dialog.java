@@ -4,6 +4,7 @@ import com.google.firebase.database.Exclude;
 import com.stfalcon.chatkit.commons.models.IDialog;
 import com.stfalcon.chatkit.commons.models.IMessage;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import mcc_2018_g15.chatapp.Author;
@@ -14,6 +15,10 @@ public class Dialog implements IDialog {
     public String dialogPhoto;
     public String dialogName;
     public ArrayList<Author> users;
+    public ArrayList<String> groupMembers;
+    public String isGroup;
+    public String admin;
+
     public IMessage lastMessage;
     public int unreadCount;
 
