@@ -59,6 +59,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import mcc_2018_g15.chatapp.holders.CustomIncomingImageMessageViewHolder;
@@ -89,6 +90,8 @@ public class MessageActivity extends AppCompatActivity {
     private static CircleImageView userImageView;
     public static boolean isLeavingChat = false;
     private boolean isGroup;
+    private HashMap<String,Long> memberJoiningDates = new HashMap<String, Long>();
+    private long USER_JOIN_TIME ;
 
 
 
@@ -111,6 +114,7 @@ public class MessageActivity extends AppCompatActivity {
 
         }
     }
+
 
 
     @Override
@@ -147,7 +151,7 @@ public class MessageActivity extends AppCompatActivity {
         chatsReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Log.e("Count ", "" + dataSnapshot.getChildrenCount());
+                Log.e("Count ", "" + dataSnapshot.child("users").getChildrenCount());
                 isGroup  = dataSnapshot.child("isGroup").getValue(Boolean.class);
 
                 if (isGroup){
@@ -155,14 +159,18 @@ public class MessageActivity extends AppCompatActivity {
                     String group_image = dataSnapshot.child("dialogPhoto").getValue(String.class);
                     userTitleTextView.setText(group_name);
                     Glide.with(getApplicationContext()).load(group_image).into(userImageView);
+                    USER_JOIN_TIME = dataSnapshot.child("users").child(USER_ID).getValue(Long.class);
+
+
                 }
                 else{
 
                     for (DataSnapshot postSnapshot : dataSnapshot.child("users").getChildren()) {
                         String member = postSnapshot.getKey();
-                        Log.d("Members + USER_ID", member + "," + USER_ID);
-
-                        if (!member.equals(USER_ID)) {
+                        if(member.equals(USER_ID)){
+                            USER_JOIN_TIME = postSnapshot.getValue(Long.class);
+                        }
+                        else {
                             Log.d("chosenMember", member);
                             userref.child(member).addValueEventListener(new ValueEventListener() {
                                 @Override
@@ -189,6 +197,8 @@ public class MessageActivity extends AppCompatActivity {
                     }
 
                 }
+
+                startMessagesListener();
             }
 
             @Override
@@ -320,66 +330,22 @@ public class MessageActivity extends AppCompatActivity {
 
         };
 
+    }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
 
-
-        myRef.addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
-                Message new_message = dataSnapshot.getValue(Message.class);
-                Author new_author = dataSnapshot.child("user").getValue(Author.class);
-                new_message.setUser(new_author);
-                Log.d("everything: " , new_message.print());
-                String isLoading = new_message.getImageUrl();
-
-                if(isLeavingChat){
-                    return;
-                }
-                if (isLoading!=null){
-                    if(isLoading.equals(LOADING_IMAGE_URL) && new_author.getId()!=USER_ID){
-                    }
-                    else{
-                        adapter.addToStart(new_message,true);
-
-                    }
-                } else{
-                    adapter.addToStart(new_message,true);
-                }
-
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String prevChildKey) {
-                if (dataSnapshot.hasChildren()) {
-                    Log.d("onchildchanged", "hasbeencalled");
-                    Message new_message = dataSnapshot.getValue(Message.class);
-
-                    Author new_author = dataSnapshot.child("user").getValue(Author.class);
-                    new_message.setUser(new_author);
-                    Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
-                    new_message.setImage(new_image);
-                    Log.d("boutotloadimage: ", "right here + " + prevChildKey);
-                    if(new_author.getId().equals(USER_ID)) {
-                        adapter.update(new_message);
-                    }
-                    else{
-                        adapter.addToStart(new_message,true);
-                    }
-                }
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {}
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String prevChildKey) {}
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {}
-
-        });
-
-
+        MenuItem addMember = menu.findItem(R.id.menu_addMember);
+        MenuItem renameGroup = menu.findItem(R.id.menu_editGroup);
+        if(isGroup){
+            addMember.setVisible(true);
+            renameGroup.setVisible(true);
+        }
+        else{
+            addMember.setVisible(false);
+            renameGroup.setVisible(false);
+        }
+        return super.onPrepareOptionsMenu(menu);
 
     }
 
@@ -414,6 +380,7 @@ public class MessageActivity extends AppCompatActivity {
             Intent addMember = new Intent(MessageActivity.this, SearchUsersActivity.class);
             addMember.putExtra("addMember", true);
             addMember.putExtra("chatId", CHAT_ID);
+            startActivity(addMember);
             return true;
         } else if (id == R.id.menu_leaveChat){
             Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
@@ -437,6 +404,13 @@ public class MessageActivity extends AppCompatActivity {
             });
             return true;
 
+        }else if (id == R.id.menu_editGroup) {
+            //  logoutUser();
+            Log.d("menu Item", "Add Member");
+            Intent editGroup = new Intent(MessageActivity.this, ProfileActivity.class);
+            editGroup.putExtra("editGroup", true);
+            editGroup.putExtra("chatId", CHAT_ID);
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -530,5 +504,66 @@ public class MessageActivity extends AppCompatActivity {
         Intent dialogsListIntent = new Intent(MessageActivity.this, DialogsActivity.class);
         dialogsListIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(dialogsListIntent);
+    }
+
+    public void startMessagesListener(){
+        myRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
+                Message new_message = dataSnapshot.getValue(Message.class);
+                Author new_author = dataSnapshot.child("user").getValue(Author.class);
+                new_message.setUser(new_author);
+                Log.d("everything: " , new_message.print());
+                String isLoading = new_message.getImageUrl();
+                Date messageTime = new_message.getCreatedAt();
+                Log.d("message_time_comare", messageTime.getTime() + ", " + USER_JOIN_TIME);
+
+               if(messageTime.getTime() > USER_JOIN_TIME) {
+                    if (isLeavingChat) {
+                        return;
+                    }
+                    if (isLoading != null) {
+                        if (isLoading.equals(LOADING_IMAGE_URL) && new_author.getId() != USER_ID) {
+                        } else {
+                            adapter.addToStart(new_message, true);
+
+                        }
+                    } else {
+                        adapter.addToStart(new_message, true);
+                    }
+                }
+
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String prevChildKey) {
+                if (dataSnapshot.hasChildren()) {
+                    Log.d("onchildchanged", "hasbeencalled");
+                    Message new_message = dataSnapshot.getValue(Message.class);
+
+                    Author new_author = dataSnapshot.child("user").getValue(Author.class);
+                    new_message.setUser(new_author);
+                    Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
+                    new_message.setImage(new_image);
+                    Log.d("boutotloadimage: ", "right here + " + prevChildKey);
+                    if(new_author.getId().equals(USER_ID)) {
+                        adapter.update(new_message);
+                    }
+                    else{
+                        adapter.addToStart(new_message,true);
+                    }
+                }
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {}
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String prevChildKey) {}
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {}
+
+        });
     }
 }
