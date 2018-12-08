@@ -59,6 +59,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import mcc_2018_g15.chatapp.holders.CustomIncomingImageMessageViewHolder;
@@ -88,6 +89,9 @@ public class MessageActivity extends AppCompatActivity {
     private static TextView userTitleTextView;
     private static CircleImageView userImageView;
     public static boolean isLeavingChat = false;
+    private boolean isGroup;
+    private HashMap<String,Long> memberJoiningDates = new HashMap<String, Long>();
+    private long USER_JOIN_TIME ;
 
 
 
@@ -97,19 +101,20 @@ public class MessageActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_IMAGE && resultCode == RESULT_OK ) {
-                if (data != null) {
-                    final Uri uri = data.getData();
-                    Log.d(TAG, "Uri: " + uri.getLastPathSegment().toString());
-                    storeTemporaryImage(myRef,uri);
-
-                }
-        } else  if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK){
-                final Uri uri = photoURI;
-                Log.d(TAG, "Uri: " + uri.getLastPathSegment());
+            if (data != null) {
+                final Uri uri = data.getData();
+                Log.d(TAG, "Uri: " + uri.getLastPathSegment().toString());
                 storeTemporaryImage(myRef,uri);
+
+            }
+        } else  if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK){
+            final Uri uri = photoURI;
+            Log.d(TAG, "Uri: " + uri.getLastPathSegment());
+            storeTemporaryImage(myRef,uri);
 
         }
     }
+
 
 
     @Override
@@ -139,20 +144,33 @@ public class MessageActivity extends AppCompatActivity {
             USER_ID = user.getUid();
             Log.d("UserID", USER_ID);
         }
-        final DatabaseReference chatsReference = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID).child("users");
+        final DatabaseReference chatsReference = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID);
         final DatabaseReference userref = FirebaseDatabase.getInstance().getReference("users");
 
 
         chatsReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Log.e("Count ", "" + dataSnapshot.getChildrenCount());
+                Log.e("Count ", "" + dataSnapshot.child("users").getChildrenCount());
+                isGroup  = dataSnapshot.child("isGroup").getValue(Boolean.class);
 
-                if (dataSnapshot.getChildrenCount() == 2) {
-                    for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                if (isGroup){
+                    String group_name = dataSnapshot.child("dialogName").getValue(String.class);
+                    String group_image = dataSnapshot.child("dialogPhoto").getValue(String.class);
+                    userTitleTextView.setText(group_name);
+                    Glide.with(getApplicationContext()).load(group_image).into(userImageView);
+                    USER_JOIN_TIME = dataSnapshot.child("users").child(USER_ID).getValue(Long.class);
+
+
+                }
+                else{
+
+                    for (DataSnapshot postSnapshot : dataSnapshot.child("users").getChildren()) {
                         String member = postSnapshot.getKey();
-                        Log.d("Members + USER_ID", member + "," + USER_ID);
-                        if (!member.equals(USER_ID)) {
+                        if(member.equals(USER_ID)){
+                            USER_JOIN_TIME = postSnapshot.getValue(Long.class);
+                        }
+                        else {
                             Log.d("chosenMember", member);
                             userref.child(member).addValueEventListener(new ValueEventListener() {
                                 @Override
@@ -163,8 +181,8 @@ public class MessageActivity extends AppCompatActivity {
 
                                     String chatter_avatar = dataSnapshot.child("avatar").getValue(String.class);
                                     //TODO Replcae with default avatar
-                                    if(!chatter_avatar.equals(SignUpActivity.DEFAULT_PROFILE)) {
-                                        Log.d("chatter_avatar","is set");
+                                    if (!chatter_avatar.equals(SignUpActivity.DEFAULT_PROFILE)) {
+                                        Log.d("chatter_avatar", "is set");
                                         Glide.with(getApplicationContext()).load(chatter_avatar).into(userImageView);
                                     }
                                     //Glide.with(MessageActivity.this).load(chatter_avatar).into(getSupportActionBar().set)
@@ -175,14 +193,12 @@ public class MessageActivity extends AppCompatActivity {
 
                                 }
                             });
-
                         }
-
                     }
+
                 }
-                else{
-                    userTitleTextView.setText("Group chat");
-                }
+
+                startMessagesListener();
             }
 
             @Override
@@ -314,9 +330,183 @@ public class MessageActivity extends AppCompatActivity {
 
         };
 
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+
+        MenuItem addMember = menu.findItem(R.id.menu_addMember);
+        MenuItem renameGroup = menu.findItem(R.id.menu_editGroup);
+        if(isGroup){
+            addMember.setVisible(true);
+            renameGroup.setVisible(true);
+        }
+        else{
+            addMember.setVisible(false);
+            renameGroup.setVisible(false);
+        }
+        return super.onPrepareOptionsMenu(menu);
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_message, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.menu_gallery) {
+            //  logoutUser();
+            Log.d("Menu_Item", "Gallery");
+
+            Intent galleryIntent = new Intent(this, GalleryActivity.class);
+            galleryIntent.putExtra("chatId", CHAT_ID);
+            galleryIntent.putExtra("userId",USER_ID);
+
+            startActivity(galleryIntent);
+            return true;
+        } else if (id == R.id.menu_addMember) {
+            //  logoutUser();
+            Log.d("menu Item", "Add Member");
+            Intent addMember = new Intent(MessageActivity.this, SearchUsersActivity.class);
+            addMember.putExtra("addMember", true);
+            addMember.putExtra("chatId", CHAT_ID);
+            startActivity(addMember);
+            return true;
+        } else if (id == R.id.menu_leaveChat){
+            Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
+            removeFromUsersChat.addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    isLeavingChat = true;
+                    Message leaving_message = new Message(USER_ID,author,USER_ID + "has left the chat");
+                    Log.d("LeavingMessage","sent");
+                    Task<Void> final_message = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID).push().setValue(leaving_message);
+                    final_message.addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
+                            startActivity(backtodialog);
+                            finish();
+                        }
+                    });
+
+                }
+            });
+            return true;
+
+        }else if (id == R.id.menu_editGroup) {
+            //  logoutUser();
+            Log.d("menu Item", "Add Member");
+            Intent editGroup = new Intent(MessageActivity.this, ProfileActivity.class);
+            editGroup.putExtra("editGroup", true);
+            editGroup.putExtra("chatId", CHAT_ID);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+    private void storeTemporaryImage(final DatabaseReference dbReference,final Uri uri){
+        Message tempMessage = new Message(USER_ID, author, null);
+        Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
+        tempMessage.setImage(new_img);
+
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        final String imageFileName = "IMG_" + timeStamp + ".jpg" ;
 
 
+        dbReference.push()
+                .setValue(tempMessage, new DatabaseReference.CompletionListener() {
+                    @Override
+                    public void onComplete(DatabaseError databaseError,
+                                           DatabaseReference databaseReference) {
+                        if (databaseError == null) {
+                            String key = databaseReference.getKey();
+                            StorageReference storageReference =
+                                    FirebaseStorage.getInstance()
+                                            .getReference("chats")
+                                            .child(CHAT_ID)
+                                            .child(imageFileName);
+                            Log.d("putImage", "about to be called: " + key );
+                            putImageInStorage(storageReference, uri, key);
+                        } else {
+                            Log.w(TAG, "Unable to write message to database.",
+                                    databaseError.toException());
+                        }
+                    }
+                });
+    }
 
+    private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
+
+        UploadTask uploadTask = storageReference.putFile(uri);
+        Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+            @Override
+            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                if (!task.isSuccessful()) {
+                    throw task.getException();
+                }
+
+                // Continue with the task to get the download URL
+
+                return storageReference.getDownloadUrl();
+            }
+        }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+            @Override
+            public void onComplete(@NonNull Task<Uri> task) {
+                if (task.isSuccessful()) {
+                    final Uri downloadUri = task.getResult();
+                    Message.Image up_img = new Message.Image(downloadUri.toString());
+                    Message message_update =
+                            new Message(USER_ID, author, null);
+                    message_update.setImage(up_img);
+                    myRef.child(key)
+                            .setValue(message_update);
+
+                    Log.d("downloadURI?", downloadUri.toString());
+                } else {
+                    // Handle failures
+                    // ...
+                }
+            }
+        });
+    }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "IMG_" + timeStamp ;
+        Log.d("timestamp", timeStamp);
+        Log.d("dateee", new Date().toString());
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        Log.d("storagedir", storageDir.toString() );
+        try {
+            File image = new File(storageDir.toString() + "/" + imageFileName + ".jpg");
+            image.createNewFile();
+            mCurrentPhotoPath = image.getAbsolutePath();
+            return image;
+        }catch (Exception e ){
+            Log.e("fileException", e.toString());
+            return null;
+        }
+    }
+    @Override
+    public void onBackPressed() {
+        Intent dialogsListIntent = new Intent(MessageActivity.this, DialogsActivity.class);
+        dialogsListIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(dialogsListIntent);
+    }
+
+    public void startMessagesListener(){
         myRef.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
@@ -325,20 +515,22 @@ public class MessageActivity extends AppCompatActivity {
                 new_message.setUser(new_author);
                 Log.d("everything: " , new_message.print());
                 String isLoading = new_message.getImageUrl();
+                Date messageTime = new_message.getCreatedAt();
+                Log.d("message_time_comare", messageTime.getTime() + ", " + USER_JOIN_TIME);
 
-                if(isLeavingChat){
-                    return;
-                }
-
-                if (isLoading!=null){
-                    if(isLoading.equals(LOADING_IMAGE_URL) && new_author.getId()!=USER_ID){
+               if(messageTime.getTime() > USER_JOIN_TIME) {
+                    if (isLeavingChat) {
+                        return;
                     }
-                    else{
-                        adapter.addToStart(new_message,true);
+                    if (isLoading != null) {
+                        if (isLoading.equals(LOADING_IMAGE_URL) && new_author.getId() != USER_ID) {
+                        } else {
+                            adapter.addToStart(new_message, true);
 
+                        }
+                    } else {
+                        adapter.addToStart(new_message, true);
                     }
-                } else{
-                    adapter.addToStart(new_message,true);
                 }
 
             }
@@ -373,154 +565,5 @@ public class MessageActivity extends AppCompatActivity {
             public void onCancelled(DatabaseError databaseError) {}
 
         });
-
-
-
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_message, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.menu_gallery) {
-          //  logoutUser();
-            Log.d("Menu_Item", "Gallery");
-
-            Intent galleryIntent = new Intent(this, GalleryActivity.class);
-            galleryIntent.putExtra("chatId", CHAT_ID);
-            galleryIntent.putExtra("userId",USER_ID);
-
-            startActivity(galleryIntent);
-            return true;
-        } else if (id == R.id.menu_addMember) {
-            //  logoutUser();
-            Log.d("menu Item", "Add Member");
-            return true;
-        } else if (id == R.id.menu_leaveChat){
-                Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
-                removeFromUsersChat.addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        isLeavingChat = true;
-                        Message leaving_message = new Message(USER_ID,author,USER_ID + "has left the chat");
-                        Log.d("LeavingMessage","sent");
-                        Task<Void> final_message = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID).push().setValue(leaving_message);
-                        final_message.addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
-                                startActivity(backtodialog);
-                                finish();
-                            }
-                        });
-
-                    }
-                });
-            return true;
-
-                }
-
-        return super.onOptionsItemSelected(item);
-    }
-private void storeTemporaryImage(final DatabaseReference dbReference,final Uri uri){
-    Message tempMessage = new Message(USER_ID, author, null);
-    Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
-    tempMessage.setImage(new_img);
-
-    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-    final String imageFileName = "IMG_" + timeStamp + ".jpg" ;
-
-
-    dbReference.push()
-            .setValue(tempMessage, new DatabaseReference.CompletionListener() {
-                @Override
-                public void onComplete(DatabaseError databaseError,
-                                       DatabaseReference databaseReference) {
-                    if (databaseError == null) {
-                        String key = databaseReference.getKey();
-                        StorageReference storageReference =
-                                FirebaseStorage.getInstance()
-                                        .getReference("chats")
-                                        .child(CHAT_ID)
-                                        .child(imageFileName);
-                        Log.d("putImage", "about to be called: " + key );
-                        putImageInStorage(storageReference, uri, key);
-                    } else {
-                        Log.w(TAG, "Unable to write message to database.",
-                                databaseError.toException());
-                    }
-                }
-            });
-}
-
-private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
-
-    UploadTask uploadTask = storageReference.putFile(uri);
-    Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-        @Override
-        public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-            if (!task.isSuccessful()) {
-                throw task.getException();
-            }
-
-            // Continue with the task to get the download URL
-
-            return storageReference.getDownloadUrl();
-        }
-    }).addOnCompleteListener(new OnCompleteListener<Uri>() {
-        @Override
-        public void onComplete(@NonNull Task<Uri> task) {
-            if (task.isSuccessful()) {
-                final Uri downloadUri = task.getResult();
-                Message.Image up_img = new Message.Image(downloadUri.toString());
-                Message message_update =
-                        new Message(USER_ID, author, null);
-                message_update.setImage(up_img);
-                myRef.child(key)
-                        .setValue(message_update);
-
-                Log.d("downloadURI?", downloadUri.toString());
-            } else {
-                // Handle failures
-                // ...
-            }
-        }
-    });
-}
-
-    private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "IMG_" + timeStamp ;
-        Log.d("timestamp", timeStamp);
-        Log.d("dateee", new Date().toString());
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        Log.d("storagedir", storageDir.toString() );
-        try {
-            File image = new File(storageDir.toString() + "/" + imageFileName + ".jpg");
-            image.createNewFile();
-            mCurrentPhotoPath = image.getAbsolutePath();
-            return image;
-        }catch (Exception e ){
-            Log.e("fileException", e.toString());
-            return null;
-        }
-    }
-    @Override
-    public void onBackPressed() {
-        Intent dialogsListIntent = new Intent(MessageActivity.this, DialogsActivity.class);
-        dialogsListIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(dialogsListIntent);
     }
 }

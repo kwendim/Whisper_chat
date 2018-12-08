@@ -29,5 +29,6 @@
             android:actionLayout="@id/gallery_toolbar"
             android:title="Label" />
         </menu>
+
     </item>
 </menu>

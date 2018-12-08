@@ -71,21 +71,6 @@ class ImageRecyclerViewAdapter extends RecyclerView.Adapter<ImageRecyclerViewAda
         DataSource<Boolean> inMemoryCache = imagePipeline.isInDiskCache(uri);
         Log.d("inMemoryCache", String.valueOf(inMemoryCache.getResult()));
 
-//        try {
-//            CacheKey cacheKey = new SimpleCacheKey(url);
-//            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-//            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-//            final byte[] byteArray = stream.toByteArray();
-//            ImagePipelineFactory.getInstance().getMainDiskStorageCache().insert(cacheKey, new WriterCallback() {
-//                @Override
-//                public void write(OutputStream outputStream) throws IOException {
-//                    outputStream.write(byteArray);
-//                }
-//            });
-//        } catch (IOException cacheWriteException) {
-//
-//        }
-//
 
         ImageRequest request = ImageRequestBuilder.newBuilderWithSource(Uri.parse(arrayList.get(position)))
                 .setResizeOptions(new ResizeOptions(90, 90))
