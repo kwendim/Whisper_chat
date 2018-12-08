@@ -46,21 +46,30 @@ public class ProfileActivity extends AppCompatActivity {
     private String orgAvatarUri;
     private String orgUsername;
     private String userId;
+    private String callingActivity="";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
+
+        Intent intent = getIntent();
+        if(intent.hasExtra("callingActivity"))
+            callingActivity = intent.getStringExtra("callingActivity");
         userId = FirebaseAuth.getInstance().getUid();
         editTextUsername = findViewById(R.id.editTextUsername);
         imageViewAvatar = findViewById(R.id.imageViewAvatar);
         final Button buttonSave = findViewById(R.id.buttonSave);
         usersRef = FirebaseDatabase.getInstance().getReference().child("users");
 
+        if(callingActivity.equals("SearchUsersActivity")){
+            editTextUsername.setHint("Group name");
+        }else{
+            getProfileData();    
+        }
         progressDialog = new ProgressDialog(this);
-
-        getProfileData();
+        
         imageViewAvatar.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
                 chooseImage();
@@ -68,9 +77,18 @@ public class ProfileActivity extends AppCompatActivity {
         });
         buttonSave.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
-                updateUser();
+                if(callingActivity.equals("SearchUsersActivity"))
+                    saveGroupInfo();
+                else
+                    updateUser();
             }
         });
+
+        
+    }
+
+    private void saveGroupInfo() {
+        Toast.makeText(this, "Group info saved", Toast.LENGTH_SHORT).show();
     }
 
     private void chooseImage() {
@@ -103,6 +121,45 @@ public class ProfileActivity extends AppCompatActivity {
         if (userId == null) {
             return;
         }
+        progressDialog.setMessage("Loading");
+        progressDialog.show();
+        usersRef.child(userId).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                orgUsername = snapshot.child("name").getValue().toString();
+                editTextUsername.setText(orgUsername);
+                editTextUsername.setSelection(editTextUsername.getText().length());
+
+                orgAvatarUri = snapshot.child("avatar").getValue().toString();
+                StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(orgAvatarUri);
+
+                httpsReference.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                    @Override
+                    public void onSuccess(byte[] bytes) {
+
+                        Bitmap avatarBmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        imageViewAvatar.setImageBitmap(Bitmap.createScaledBitmap(avatarBmp, imageViewAvatar.getWidth(),
+                                imageViewAvatar.getHeight(), false));
+                        progressDialog.dismiss();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        // Handle any errors
+                        progressDialog.dismiss();
+                    }
+                });
+
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                progressDialog.dismiss();
+            }
+        });
+    }
+
+    // TODO: 12/8/2018 Remove if still not used 
+    private void getGroupData() {
         progressDialog.setMessage("Loading");
         progressDialog.show();
         usersRef.child(userId).addValueEventListener(new ValueEventListener() {

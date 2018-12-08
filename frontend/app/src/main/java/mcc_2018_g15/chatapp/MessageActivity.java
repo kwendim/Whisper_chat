@@ -158,7 +158,7 @@ public class MessageActivity extends AppCompatActivity {
 
 
                                     String chatter_avatar = dataSnapshot.child("avatar").getValue(String.class);
-                                    Glide.with(MessageActivity.this).load(chatter_avatar).into(userImageView);
+                                    Glide.with(getApplicationContext()).load(chatter_avatar).into(userImageView);
                                     //Glide.with(MessageActivity.this).load(chatter_avatar).into(getSupportActionBar().set)
                                 }
 
@@ -469,5 +469,10 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
             return null;
         }
     }
-
+    @Override
+    public void onBackPressed() {
+        Intent dialogsListIntent = new Intent(MessageActivity.this, DialogsActivity.class);
+        dialogsListIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(dialogsListIntent);
+    }
 }
