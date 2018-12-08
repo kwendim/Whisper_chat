@@ -13,6 +13,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -57,7 +58,7 @@ public class DialogsActivity extends AppCompatActivity{
             @Override
             public void loadImage(ImageView imageView, @Nullable String url, @Nullable Object payload) {
                 try {
-                    Picasso.get().load(url).into(imageView);
+                    Glide.with(getApplicationContext()).load(url).into(imageView);
                 }catch(Exception e){
 
                 }

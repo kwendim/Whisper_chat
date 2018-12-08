@@ -17,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
@@ -278,7 +279,7 @@ public class SearchUsersActivity extends AppCompatActivity {
 
         public void setAvatar(String url) {
             ImageView avatarIV = (ImageView) view.findViewById(R.id.avatar_iv);
-            Picasso.get().load(url).into(avatarIV);
+            Glide.with(avatarIV.getContext()).load(url).into(avatarIV);
         }
 
         public void setName(String lastMessage) {

@@ -66,7 +66,7 @@ import mcc_2018_g15.chatapp.holders.CustomIncomingTextMessageViewHolder;
 import mcc_2018_g15.chatapp.holders.CustomOutcomingImageMessageViewHolder;
 import mcc_2018_g15.chatapp.holders.CustomOutcomingTextMessageViewHolder;
 
-//TODO Change loading gif.
+//TODO Leave chat and user data load from the users table
 public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
@@ -87,6 +87,7 @@ public class MessageActivity extends AppCompatActivity {
     private MessagesListAdapter<Message> adapter;
     private static TextView userTitleTextView;
     private static CircleImageView userImageView;
+    public static boolean isLeavingChat = false;
 
 
 
@@ -117,6 +118,7 @@ public class MessageActivity extends AppCompatActivity {
         setContentView(R.layout.activity_messages);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        isLeavingChat = false;
 
         android.support.v7.app.ActionBar mActionBar = getSupportActionBar();
         mActionBar.setDisplayHomeAsUpEnabled(false);
@@ -315,10 +317,6 @@ public class MessageActivity extends AppCompatActivity {
 
 
 
-
-
-
-//TODO: HANDLE NEW CHATS WITH THIS EVENT LISTENER.
         myRef.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
@@ -327,6 +325,10 @@ public class MessageActivity extends AppCompatActivity {
                 new_message.setUser(new_author);
                 Log.d("everything: " , new_message.print());
                 String isLoading = new_message.getImageUrl();
+
+                if(isLeavingChat){
+                    return;
+                }
 
                 if (isLoading!=null){
                     if(isLoading.equals(LOADING_IMAGE_URL) && new_author.getId()!=USER_ID){
@@ -406,17 +408,28 @@ public class MessageActivity extends AppCompatActivity {
             Log.d("menu Item", "Add Member");
             return true;
         } else if (id == R.id.menu_leaveChat){
-            Task<Void> leavechat = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID).child("users").child(USER_ID).removeValue();
-            leavechat.addOnCompleteListener(new OnCompleteListener<Void>() {
-                @Override
-                public void onComplete(@NonNull Task<Void> task) {
-                    Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
-                    startActivity(backtodialog);
-                    finish();
-                }
-            });
+                Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
+                removeFromUsersChat.addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        isLeavingChat = true;
+                        Message leaving_message = new Message(USER_ID,author,USER_ID + "has left the chat");
+                        Log.d("LeavingMessage","sent");
+                        Task<Void> final_message = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID).push().setValue(leaving_message);
+                        final_message.addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
+                                startActivity(backtodialog);
+                                finish();
+                            }
+                        });
+
+                    }
+                });
             return true;
-        }
+
+                }
 
         return super.onOptionsItemSelected(item);
     }
