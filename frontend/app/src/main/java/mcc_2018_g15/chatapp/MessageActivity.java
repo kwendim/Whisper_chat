@@ -98,16 +98,16 @@ public class MessageActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_IMAGE && resultCode == RESULT_OK ) {
-                if (data != null) {
-                    final Uri uri = data.getData();
-                    Log.d(TAG, "Uri: " + uri.getLastPathSegment().toString());
-                    storeTemporaryImage(myRef,uri);
-
-                }
-        } else  if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK){
-                final Uri uri = photoURI;
-                Log.d(TAG, "Uri: " + uri.getLastPathSegment());
+            if (data != null) {
+                final Uri uri = data.getData();
+                Log.d(TAG, "Uri: " + uri.getLastPathSegment().toString());
                 storeTemporaryImage(myRef,uri);
+
+            }
+        } else  if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK){
+            final Uri uri = photoURI;
+            Log.d(TAG, "Uri: " + uri.getLastPathSegment());
+            storeTemporaryImage(myRef,uri);
 
         }
     }
@@ -148,15 +148,15 @@ public class MessageActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Log.e("Count ", "" + dataSnapshot.getChildrenCount());
-                 isGroup  = dataSnapshot.child("isGroup").getValue(Boolean.class);
+                isGroup  = dataSnapshot.child("isGroup").getValue(Boolean.class);
 
-                 if (isGroup){
-                     String group_name = dataSnapshot.child("dialogName").getValue(String.class);
-                     String group_image = dataSnapshot.child("dialogPhoto").getValue(String.class);
-                     userTitleTextView.setText(group_name);
-                     Glide.with(getApplicationContext()).load(group_image).into(userImageView);
-                 }
-                 else{
+                if (isGroup){
+                    String group_name = dataSnapshot.child("dialogName").getValue(String.class);
+                    String group_image = dataSnapshot.child("dialogPhoto").getValue(String.class);
+                    userTitleTextView.setText(group_name);
+                    Glide.with(getApplicationContext()).load(group_image).into(userImageView);
+                }
+                else{
 
                     for (DataSnapshot postSnapshot : dataSnapshot.child("users").getChildren()) {
                         String member = postSnapshot.getKey();
@@ -186,9 +186,9 @@ public class MessageActivity extends AppCompatActivity {
                                 }
                             });
                         }
-                        }
-
                     }
+
+                }
             }
 
             @Override
@@ -399,7 +399,7 @@ public class MessageActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.menu_gallery) {
-          //  logoutUser();
+            //  logoutUser();
             Log.d("Menu_Item", "Gallery");
 
             Intent galleryIntent = new Intent(this, GalleryActivity.class);
@@ -416,96 +416,96 @@ public class MessageActivity extends AppCompatActivity {
             addMember.putExtra("chatId", CHAT_ID);
             return true;
         } else if (id == R.id.menu_leaveChat){
-                Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
-                removeFromUsersChat.addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        isLeavingChat = true;
-                        Message leaving_message = new Message(USER_ID,author,USER_ID + "has left the chat");
-                        Log.d("LeavingMessage","sent");
-                        Task<Void> final_message = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID).push().setValue(leaving_message);
-                        final_message.addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
-                                startActivity(backtodialog);
-                                finish();
-                            }
-                        });
-
-                    }
-                });
-            return true;
+            Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
+            removeFromUsersChat.addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    isLeavingChat = true;
+                    Message leaving_message = new Message(USER_ID,author,USER_ID + "has left the chat");
+                    Log.d("LeavingMessage","sent");
+                    Task<Void> final_message = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID).push().setValue(leaving_message);
+                    final_message.addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
+                            startActivity(backtodialog);
+                            finish();
+                        }
+                    });
 
                 }
+            });
+            return true;
+
+        }
 
         return super.onOptionsItemSelected(item);
     }
-private void storeTemporaryImage(final DatabaseReference dbReference,final Uri uri){
-    Message tempMessage = new Message(USER_ID, author, null);
-    Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
-    tempMessage.setImage(new_img);
+    private void storeTemporaryImage(final DatabaseReference dbReference,final Uri uri){
+        Message tempMessage = new Message(USER_ID, author, null);
+        Message.Image new_img = new Message.Image(LOADING_IMAGE_URL);
+        tempMessage.setImage(new_img);
 
-    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-    final String imageFileName = "IMG_" + timeStamp + ".jpg" ;
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        final String imageFileName = "IMG_" + timeStamp + ".jpg" ;
 
 
-    dbReference.push()
-            .setValue(tempMessage, new DatabaseReference.CompletionListener() {
-                @Override
-                public void onComplete(DatabaseError databaseError,
-                                       DatabaseReference databaseReference) {
-                    if (databaseError == null) {
-                        String key = databaseReference.getKey();
-                        StorageReference storageReference =
-                                FirebaseStorage.getInstance()
-                                        .getReference("chats")
-                                        .child(CHAT_ID)
-                                        .child(imageFileName);
-                        Log.d("putImage", "about to be called: " + key );
-                        putImageInStorage(storageReference, uri, key);
-                    } else {
-                        Log.w(TAG, "Unable to write message to database.",
-                                databaseError.toException());
+        dbReference.push()
+                .setValue(tempMessage, new DatabaseReference.CompletionListener() {
+                    @Override
+                    public void onComplete(DatabaseError databaseError,
+                                           DatabaseReference databaseReference) {
+                        if (databaseError == null) {
+                            String key = databaseReference.getKey();
+                            StorageReference storageReference =
+                                    FirebaseStorage.getInstance()
+                                            .getReference("chats")
+                                            .child(CHAT_ID)
+                                            .child(imageFileName);
+                            Log.d("putImage", "about to be called: " + key );
+                            putImageInStorage(storageReference, uri, key);
+                        } else {
+                            Log.w(TAG, "Unable to write message to database.",
+                                    databaseError.toException());
+                        }
                     }
+                });
+    }
+
+    private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
+
+        UploadTask uploadTask = storageReference.putFile(uri);
+        Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+            @Override
+            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                if (!task.isSuccessful()) {
+                    throw task.getException();
                 }
-            });
-}
 
-private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
+                // Continue with the task to get the download URL
 
-    UploadTask uploadTask = storageReference.putFile(uri);
-    Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-        @Override
-        public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-            if (!task.isSuccessful()) {
-                throw task.getException();
+                return storageReference.getDownloadUrl();
             }
+        }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+            @Override
+            public void onComplete(@NonNull Task<Uri> task) {
+                if (task.isSuccessful()) {
+                    final Uri downloadUri = task.getResult();
+                    Message.Image up_img = new Message.Image(downloadUri.toString());
+                    Message message_update =
+                            new Message(USER_ID, author, null);
+                    message_update.setImage(up_img);
+                    myRef.child(key)
+                            .setValue(message_update);
 
-            // Continue with the task to get the download URL
-
-            return storageReference.getDownloadUrl();
-        }
-    }).addOnCompleteListener(new OnCompleteListener<Uri>() {
-        @Override
-        public void onComplete(@NonNull Task<Uri> task) {
-            if (task.isSuccessful()) {
-                final Uri downloadUri = task.getResult();
-                Message.Image up_img = new Message.Image(downloadUri.toString());
-                Message message_update =
-                        new Message(USER_ID, author, null);
-                message_update.setImage(up_img);
-                myRef.child(key)
-                        .setValue(message_update);
-
-                Log.d("downloadURI?", downloadUri.toString());
-            } else {
-                // Handle failures
-                // ...
+                    Log.d("downloadURI?", downloadUri.toString());
+                } else {
+                    // Handle failures
+                    // ...
+                }
             }
-        }
-    });
-}
+        });
+    }
 
     private File createImageFile() throws IOException {
         // Create an image file name
