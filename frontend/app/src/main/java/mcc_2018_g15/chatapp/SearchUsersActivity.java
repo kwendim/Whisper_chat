@@ -46,6 +46,7 @@ public class SearchUsersActivity extends AppCompatActivity {
     private ArrayList<String> previousMembers = new ArrayList<>();
     FirebaseAuth firebaseAuth;
     boolean isAddingMember = false;
+    boolean isAdmin = true;
     String chatId = "";
 
     @Override
@@ -64,6 +65,7 @@ public class SearchUsersActivity extends AppCompatActivity {
         if (intent.hasExtra("isGroup"))
             isGroup = intent.getBooleanExtra("isGroup", false);
         if (intent.hasExtra("addMember")) {
+            isAdmin = intent.getBooleanExtra("isAdmin", false);
             isAddingMember = intent.getBooleanExtra("addMember", false);
             chatId = intent.getStringExtra("chatId");
 
@@ -116,11 +118,15 @@ public class SearchUsersActivity extends AppCompatActivity {
                         if (isGroup) {
                             holder.setCheckboxVisibility(View.VISIBLE);
 
+
                             if (groupMembers.contains(userId)) {
 //                            holder.view.setBackgroundColor(getResources().getColor(R.color.blue));
                                 holder.setCheckbox(true);
                             } else {
                                 holder.setCheckbox(false);
+                            }
+                            if(!isAdmin&&previousMembers.contains(userId)){
+                                holder.setEnabled(false);
                             }
                         } else {
                             holder.setCheckboxVisibility(View.GONE);
@@ -131,10 +137,10 @@ public class SearchUsersActivity extends AppCompatActivity {
                                 if (isGroup) {
                                     if (groupMembers.contains(userId)) {
                                         holder.setCheckbox(false);
-                                        groupMembers.remove(userId);
+//                                        groupMembers.remove(userId);
                                     } else {
                                         holder.setCheckbox(true);
-                                        groupMembers.add(userId);
+//                                        groupMembers.add(userId);
                                     }
 //                                    chatsRef.child(chatID).child("isGroup").setValue(false);
                                     //databaseRef.child("chats").child(databaseReference.getKey()).child("dialogName").setValue("test");
@@ -160,8 +166,8 @@ public class SearchUsersActivity extends AppCompatActivity {
                                                         chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
                                                         chatsRef.child(chatID).child("users").child(userId).setValue(System.currentTimeMillis());
                                                         chatsRef.child(chatID).child("admin").setValue(USER_ID);
+                                                        databaseRef.child("users").child(userId).child("user_chats").child(chatID).setValue("user");
                                                         databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
-                                                        databaseRef.child("users").child(userId).child("user_chats").child(chatID).setValue("admin");
 
                                                         Intent chatIntent = new Intent(getBaseContext(), MessageActivity.class);
                                                         chatIntent.putExtra("chatId", chatID);
@@ -184,12 +190,16 @@ public class SearchUsersActivity extends AppCompatActivity {
                         cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                             @Override
                             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                                if (groupMembers.contains(!b)) {
+                                if(b){
+                                    if (!groupMembers.contains(userId)) {
 //                                    holder.setCheckbox(b);
-                                    groupMembers.remove(userId);
-                                } else {
-//                                    holder.setCheckbox(true);
-                                    groupMembers.add(userId);
+                                        groupMembers.add(userId);
+                                    }
+                                }else{
+                                    if (groupMembers.contains(userId)) {
+//                                    holder.setCheckbox(b);
+                                        groupMembers.remove(userId);
+                                    }
                                 }
                             }
                         });
@@ -256,17 +266,21 @@ public class SearchUsersActivity extends AppCompatActivity {
                     }
                     for(int i=0; i<previousMembers.size(); i++){
                         if(!groupMembers.contains(previousMembers.get(i))){
-                            chatsRef.child(chatId).child("users").child(groupMembers.get(i)).removeValue();
-                            databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatId).removeValue();
+                            chatsRef.child(chatId).child("users").child(previousMembers.get(i)).removeValue();
+                            databaseRef.child("users").child(previousMembers.get(i)).child("user_chats").child(chatId).removeValue();
                         }
                     }
+                    finish();
                 } else {
                     chatsRef.push()
                             .setValue("", new DatabaseReference.CompletionListener() {
                                 @Override
                                 public void onComplete(DatabaseError databaseError,
                                                        DatabaseReference databaseReference) {
-                                    if (groupMembers.size() < 3) {
+                                    int numberOfMembers = 3;
+                                    if(!groupMembers.contains(USER_ID))
+                                        numberOfMembers = 2;
+                                    if (groupMembers.size() < numberOfMembers) {
                                         Snackbar.make(view, "Please select at least three people!", Snackbar.LENGTH_LONG).setAction("Action", null).show();
                                         return;
                                     }
@@ -275,11 +289,12 @@ public class SearchUsersActivity extends AppCompatActivity {
                                     chatsRef.child(chatID).child("isGroup").setValue(true);
                                     chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
                                     chatsRef.child(chatID).child("admin").setValue(USER_ID);
-                                    databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
                                     for (int i = 0; i < groupMembers.size(); i++) {
                                         chatsRef.child(chatID).child("users").child(groupMembers.get(i)).setValue(System.currentTimeMillis());
-                                        databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatID).setValue("admin");
+                                        databaseRef.child("users").child(groupMembers.get(i)).child("user_chats").child(chatID).setValue("user");
                                     }
+                                    databaseRef.child("users").child(USER_ID).child("user_chats").child(chatID).setValue("admin");
+
                                     Intent chatIntent = new Intent(getBaseContext(), ProfileActivity.class);
                                     chatIntent.putExtra("chatId", chatID);
                                     chatIntent.putExtra("callingActivity", "SearchUsersActivity");
@@ -348,7 +363,12 @@ public class SearchUsersActivity extends AppCompatActivity {
         public void setCheckboxVisibility(int visibility) {
             CheckBox checkBox = (CheckBox) view.findViewById(R.id.cbGroupMember);
             checkBox.setVisibility(visibility);
+
         }
 
+        public void setEnabled(boolean b) {
+            CheckBox checkBox = (CheckBox) view.findViewById(R.id.cbGroupMember);
+            checkBox.setEnabled(b);
+        }
     }
 }
