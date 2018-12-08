@@ -88,6 +88,7 @@ public class MessageActivity extends AppCompatActivity {
     private static TextView userTitleTextView;
     private static CircleImageView userImageView;
     public static boolean isLeavingChat = false;
+    private boolean isGroup;
 
 
 
@@ -139,7 +140,7 @@ public class MessageActivity extends AppCompatActivity {
             USER_ID = user.getUid();
             Log.d("UserID", USER_ID);
         }
-        final DatabaseReference chatsReference = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID).child("users");
+        final DatabaseReference chatsReference = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID);
         final DatabaseReference userref = FirebaseDatabase.getInstance().getReference("users");
 
 
@@ -147,11 +148,20 @@ public class MessageActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Log.e("Count ", "" + dataSnapshot.getChildrenCount());
+                 isGroup  = dataSnapshot.child("isGroup").getValue(Boolean.class);
 
-                if (dataSnapshot.getChildrenCount() == 2) {
-                    for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                 if (isGroup){
+                     String group_name = dataSnapshot.child("dialogName").getValue(String.class);
+                     String group_image = dataSnapshot.child("dialogPhoto").getValue(String.class);
+                     userTitleTextView.setText(group_name);
+                     Glide.with(getApplicationContext()).load(group_image).into(userImageView);
+                 }
+                 else{
+
+                    for (DataSnapshot postSnapshot : dataSnapshot.child("users").getChildren()) {
                         String member = postSnapshot.getKey();
                         Log.d("Members + USER_ID", member + "," + USER_ID);
+
                         if (!member.equals(USER_ID)) {
                             Log.d("chosenMember", member);
                             userref.child(member).addValueEventListener(new ValueEventListener() {
@@ -163,8 +173,8 @@ public class MessageActivity extends AppCompatActivity {
 
                                     String chatter_avatar = dataSnapshot.child("avatar").getValue(String.class);
                                     //TODO Replcae with default avatar
-                                    if(!chatter_avatar.equals(SignUpActivity.DEFAULT_PROFILE)) {
-                                        Log.d("chatter_avatar","is set");
+                                    if (!chatter_avatar.equals(SignUpActivity.DEFAULT_PROFILE)) {
+                                        Log.d("chatter_avatar", "is set");
                                         Glide.with(getApplicationContext()).load(chatter_avatar).into(userImageView);
                                     }
                                     //Glide.with(MessageActivity.this).load(chatter_avatar).into(getSupportActionBar().set)
@@ -175,14 +185,10 @@ public class MessageActivity extends AppCompatActivity {
 
                                 }
                             });
-
+                        }
                         }
 
                     }
-                }
-                else{
-                    userTitleTextView.setText("Group chat");
-                }
             }
 
             @Override
@@ -329,7 +335,6 @@ public class MessageActivity extends AppCompatActivity {
                 if(isLeavingChat){
                     return;
                 }
-
                 if (isLoading!=null){
                     if(isLoading.equals(LOADING_IMAGE_URL) && new_author.getId()!=USER_ID){
                     }
@@ -406,6 +411,9 @@ public class MessageActivity extends AppCompatActivity {
         } else if (id == R.id.menu_addMember) {
             //  logoutUser();
             Log.d("menu Item", "Add Member");
+            Intent addMember = new Intent(MessageActivity.this, SearchUsersActivity.class);
+            addMember.putExtra("addMember", true);
+            addMember.putExtra("chatId", CHAT_ID);
             return true;
         } else if (id == R.id.menu_leaveChat){
                 Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
