@@ -64,7 +64,7 @@ public class Message implements IMessage,MessageContentType.Image {
     }
 
     public String print(){
-        return getId() + ", " + getText() + ", " + getCreatedAt().toString() + ", " + getUser().toString();
+        return getId() + ", " + getText() + ", " + getCreatedAt().toString() + ", " + getUser().toString() ;
     }
 
     public void setCreatedAt(Date new_createdAt){ this.createdAt = new_createdAt;}

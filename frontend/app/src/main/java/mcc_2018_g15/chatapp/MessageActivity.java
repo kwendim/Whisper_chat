@@ -66,7 +66,7 @@ import mcc_2018_g15.chatapp.holders.CustomIncomingTextMessageViewHolder;
 import mcc_2018_g15.chatapp.holders.CustomOutcomingImageMessageViewHolder;
 import mcc_2018_g15.chatapp.holders.CustomOutcomingTextMessageViewHolder;
 
-
+//TODO Change loading gif.
 public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "MessageActivity";
@@ -74,7 +74,7 @@ public class MessageActivity extends AppCompatActivity {
     private static int REQUEST_TAKE_PHOTO = 2;
     DatabaseReference myRef;
     FirebaseDatabase database;
-    private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
+    private static final String LOADING_IMAGE_URL = "https://firebasestorage.googleapis.com/v0/b/mcc-fall-2018-g15.appspot.com/o/loading_gif.gif?alt=media&token=1edb26c7-6251-413b-884c-45fad9e09a53";
     String mCurrentPhotoPath;
     Uri photoURI;
     private String CHAT_ID;
@@ -149,7 +149,9 @@ public class MessageActivity extends AppCompatActivity {
                 if (dataSnapshot.getChildrenCount() == 2) {
                     for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                         String member = postSnapshot.getKey();
-                        if (member != USER_ID) {
+                        Log.d("Members + USER_ID", member + "," + USER_ID);
+                        if (!member.equals(USER_ID)) {
+                            Log.d("chosenMember", member);
                             userref.child(member).addValueEventListener(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -158,7 +160,11 @@ public class MessageActivity extends AppCompatActivity {
 
 
                                     String chatter_avatar = dataSnapshot.child("avatar").getValue(String.class);
-                                    Glide.with(MessageActivity.this).load(chatter_avatar).into(userImageView);
+                                    //TODO Replcae with default avatar
+                                    if(!chatter_avatar.equals(SignUpActivity.DEFAULT_PROFILE)) {
+                                        Log.d("chatter_avatar","is set");
+                                        Glide.with(getApplicationContext()).load(chatter_avatar).into(userImageView);
+                                    }
                                     //Glide.with(MessageActivity.this).load(chatter_avatar).into(getSupportActionBar().set)
                                 }
 
@@ -171,6 +177,9 @@ public class MessageActivity extends AppCompatActivity {
                         }
 
                     }
+                }
+                else{
+                    userTitleTextView.setText("Group chat");
                 }
             }
 
@@ -317,7 +326,18 @@ public class MessageActivity extends AppCompatActivity {
                 Author new_author = dataSnapshot.child("user").getValue(Author.class);
                 new_message.setUser(new_author);
                 Log.d("everything: " , new_message.print());
-                adapter.addToStart(new_message, true);
+                String isLoading = new_message.getImageUrl();
+
+                if (isLoading!=null){
+                    if(isLoading.equals(LOADING_IMAGE_URL) && new_author.getId()!=USER_ID){
+                    }
+                    else{
+                        adapter.addToStart(new_message,true);
+
+                    }
+                } else{
+                    adapter.addToStart(new_message,true);
+                }
 
             }
 
@@ -332,7 +352,12 @@ public class MessageActivity extends AppCompatActivity {
                     Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
                     new_message.setImage(new_image);
                     Log.d("boutotloadimage: ", "right here + " + prevChildKey);
-                    adapter.update(new_message);
+                    if(new_author.getId().equals(USER_ID)) {
+                        adapter.update(new_message);
+                    }
+                    else{
+                        adapter.addToStart(new_message,true);
+                    }
                 }
             }
 
@@ -372,6 +397,8 @@ public class MessageActivity extends AppCompatActivity {
 
             Intent galleryIntent = new Intent(this, GalleryActivity.class);
             galleryIntent.putExtra("chatId", CHAT_ID);
+            galleryIntent.putExtra("userId",USER_ID);
+
             startActivity(galleryIntent);
             return true;
         } else if (id == R.id.menu_addMember) {
@@ -379,7 +406,15 @@ public class MessageActivity extends AppCompatActivity {
             Log.d("menu Item", "Add Member");
             return true;
         } else if (id == R.id.menu_leaveChat){
-            Log.d("Menu_item", "leave chat");
+            Task<Void> leavechat = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID).child("users").child(USER_ID).removeValue();
+            leavechat.addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
+                    startActivity(backtodialog);
+                    finish();
+                }
+            });
             return true;
         }
 

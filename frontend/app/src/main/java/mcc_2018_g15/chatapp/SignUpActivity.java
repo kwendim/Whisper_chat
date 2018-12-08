@@ -41,6 +41,7 @@ public class SignUpActivity extends AppCompatActivity {
     private ImageView imageViewAvatar;
     private ProgressDialog progressDialog;
     private static final int PICK_IMAGE = 1;
+    public static String DEFAULT_PROFILE ="https://firebasestorage.googleapis.com/v0/b/mcc-fall-2018-g15.appspot.com/o/default_user.jpg?alt=media&token=d38a095f-5cc0-4b17-a639-af237d19f695";
 
 
     private FirebaseAuth firebaseAuth;
@@ -225,7 +226,7 @@ public class SignUpActivity extends AppCompatActivity {
                             else {
                                 String username = editTextUsername.getText().toString().trim();
                                 String userId = firebaseAuth.getUid();
-                                addUser(userId, username, "users/default/default.png");
+                                addUser(userId, username, DEFAULT_PROFILE);
                             }
                             startActivity(new Intent(SignUpActivity.this, DialogsActivity.class));
                             finish();

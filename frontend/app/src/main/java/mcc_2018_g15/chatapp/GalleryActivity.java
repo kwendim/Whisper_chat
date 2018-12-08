@@ -46,8 +46,9 @@ import android.os.Bundle;
 // through all images when opening one.
 public class GalleryActivity extends AppCompatActivity {
     RecyclerView galleryRecycler;
-    private static String CHAT_ID ;
+    private static String CHAT_ID, USER_ID ;
     private static int SORTING_OPTION = 1;
+    private String resolution;
 
 
     @Override
@@ -83,10 +84,41 @@ public class GalleryActivity extends AppCompatActivity {
         Log.d("fresco", "initialized");
 
         CHAT_ID = getIntent().getStringExtra("chatId");
+        USER_ID = getIntent().getStringExtra("userId");
 
-        setUpRecyclerView();
-        getAllImages_date();
-        SORTING_OPTION =1;
+        DatabaseReference resolution_check = FirebaseDatabase.getInstance().getReference("users").child(USER_ID);
+        resolution_check.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+               String imgRes = dataSnapshot.child("imgRes").getValue(String.class);
+
+               if(imgRes.equals("high")){
+                   resolution = "high_res_url";
+               }
+               else if(imgRes.equals("low")){
+                   resolution = "low_res_url";
+               }
+               else {
+                   resolution = "url";
+               }
+                if (imgRes.equals("full")){
+                    resolution = "url";
+                }
+                Log.i("galleryResolution", resolution);
+                setUpRecyclerView();
+                getAllImages_date();
+                SORTING_OPTION =1;
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
+
     }
 
 
@@ -174,7 +206,11 @@ public class GalleryActivity extends AppCompatActivity {
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
                         if(postSnapshot.hasChild("createdAt")) {
                             String image_date = new SimpleDateFormat("MMMM dd,yyyy").format(postSnapshot.child("createdAt").getValue(Date.class));
-                            String image_path = postSnapshot.child("url").getValue(String.class);
+                            String image_path = postSnapshot.child(resolution).getValue(String.class);
+                            if (image_path == null){
+                                Log.d("image_path_null", "true");
+                                 image_path = postSnapshot.child("url").getValue(String.class);
+                            }
                             if (image_sorter.get(image_date) == null) {
                                 ArrayList<String> new_element = new ArrayList<>();
                                 new_element.add(image_path);
@@ -223,7 +259,11 @@ public class GalleryActivity extends AppCompatActivity {
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
                     if(postSnapshot.hasChild("id")) {
                         String user_id = postSnapshot.child("id").getValue(String.class);
-                        String image_path = postSnapshot.child("url").getValue(String.class);
+                        String image_path = postSnapshot.child(resolution).getValue(String.class);
+                        if (image_path == null){
+                            Log.d("image_path_null", "true");
+                            image_path = postSnapshot.child("url").getValue(String.class);
+                        }
                         if (image_sorter.get(user_id) == null) {
                             ArrayList<String> new_element = new ArrayList<>();
                             new_element.add(image_path);
@@ -287,7 +327,11 @@ public class GalleryActivity extends AppCompatActivity {
                 Log.e("Count " ,"" + snapshot.getChildrenCount());
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
                         String label = postSnapshot.child("label").getValue(String.class);
-                        String image_path = postSnapshot.child("url").getValue(String.class);
+                        String image_path = postSnapshot.child(resolution).getValue(String.class);
+                    if (image_path == null){
+                        Log.d("image_path_null", "true");
+                        image_path = postSnapshot.child("url").getValue(String.class);
+                    }
                         if(image_sorter.get(label)==null){
                             ArrayList<String> new_element = new ArrayList<>();
                             new_element.add(image_path);
