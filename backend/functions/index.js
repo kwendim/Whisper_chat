@@ -14,6 +14,10 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 
+const runtimeOpts = {
+  timeoutSeconds: 300,
+  memory: '1GB'
+}
 
 
 // Take the text parameter passed to this HTTP endpoint and insert it into the
@@ -114,7 +118,7 @@ exports.addMessage = functions.https.onRequest((req, res) => {
              * When an image is uploaded we find label by the Cloud Vision
              * API and resize it using ImageMagick.
              */
-            exports.labelImagesNew = functions.database.ref('/chat_msgs/{chat_id}/{chat_msg_id}')
+            exports.labelImagesNew = functions.runWith(runtimeOpts).database.ref('/chat_msgs/{chat_id}/{chat_msg_id}')
             .onUpdate(async(change, context) => {
 
               console.log("Before : " + change.before.val().imageurl.url)
