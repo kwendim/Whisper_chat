@@ -504,5 +504,10 @@ private void putImageInStorage(final StorageReference storageReference, Uri uri,
             return null;
         }
     }
-
+    @Override
+    public void onBackPressed() {
+        Intent dialogsListIntent = new Intent(MessageActivity.this, DialogsActivity.class);
+        dialogsListIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(dialogsListIntent);
+    }
 }

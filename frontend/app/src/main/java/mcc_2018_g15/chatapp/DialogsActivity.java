@@ -155,7 +155,10 @@ public class DialogsActivity extends AppCompatActivity{
 
 
 //                        new_dialog.setDialogName(TextUtils.join(", ", keyList));
-
+                        try {
+                            calendar.setTimeInMillis((long) chatsDataSnapshot.child("last_message").child("createdAt").child("time").getValue());
+                        }catch (Exception e){
+                        }
                         final String last_message=(chatsDataSnapshot.child("last_message").child("text").getValue(String.class));
                         // TODO: 11/27/2018 update data below with data from last message object
                         Message msg = new Message("id", new Author("user_id","","http://i.imgur.com/mRqh5w1.png"), last_message, calendar.getTime());
