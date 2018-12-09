@@ -97,6 +97,8 @@ public class SearchUsersActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String queryText) {
+                if(queryText.length()<3)
+                    return true;
                 query = FirebaseDatabase.getInstance().getReference().child("users").orderByChild("name").startAt(queryText).endAt(queryText + "\uf8ff").limitToLast(50);
                 FirebaseRecyclerOptions<User> options =
                         new FirebaseRecyclerOptions.Builder<User>()
@@ -122,8 +124,10 @@ public class SearchUsersActivity extends AppCompatActivity {
 
                             if (groupMembers.contains(userId)) {
 //                            holder.view.setBackgroundColor(getResources().getColor(R.color.blue));
-                                holder.setCheckbox(true);
+                                if(holder.checkboxEnabled())
+                                    holder.setCheckbox(true);
                             } else {
+                                if(holder.checkboxEnabled())
                                 holder.setCheckbox(false);
                             }
                             if(!isAdmin&&previousMembers.contains(userId)){
@@ -137,10 +141,12 @@ public class SearchUsersActivity extends AppCompatActivity {
                             public void onClick(View v) {
                                 if (isGroup) {
                                     if (groupMembers.contains(userId)) {
-                                        holder.setCheckbox(false);
+                                        if(holder.checkboxEnabled())
+                                            holder.setCheckbox(false);
 //                                        groupMembers.remove(userId);
                                     } else {
-                                        holder.setCheckbox(true);
+                                        if(holder.checkboxEnabled())
+                                            holder.setCheckbox(true);
 //                                        groupMembers.add(userId);
                                     }
 //                                    chatsRef.child(chatID).child("isGroup").setValue(false);
@@ -258,6 +264,8 @@ public class SearchUsersActivity extends AppCompatActivity {
         btnCreateGroup.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
+                btnCreateGroup.setClickable(false);
+                btnCreateGroup.setEnabled(false);
                 if (isAddingMember) {
                     for (int i = 0; i < groupMembers.size(); i++) {
                         if(!previousMembers.contains(groupMembers.get(i))) {
@@ -305,6 +313,7 @@ public class SearchUsersActivity extends AppCompatActivity {
                                 }
                             });
                 }
+                finish();
             }
         });
 
@@ -372,6 +381,10 @@ public class SearchUsersActivity extends AppCompatActivity {
         public void setEnabled(boolean b) {
             CheckBox checkBox = (CheckBox) view.findViewById(R.id.cbGroupMember);
             checkBox.setEnabled(b);
+        }
+        public boolean checkboxEnabled() {
+            CheckBox checkBox = (CheckBox) view.findViewById(R.id.cbGroupMember);
+            return checkBox.isEnabled();
         }
     }
 }
