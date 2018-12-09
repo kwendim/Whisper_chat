@@ -23,21 +23,21 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="50dp"/>-->
 
-        <ImageView
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imageViewAvatar"
             android:layout_width="100dp"
             android:layout_height="100dp"
+            android:layout_marginTop="20dp"
             android:layout_gravity="center"
-            android:layout_marginTop="30dp"
-            android:src="@drawable/add_avatar"
-            android:layout_marginBottom="15dp"/>
+            android:src="@drawable/add_avatar"/>
 
         <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColorHint="@color/colorPrimary"
             android:theme="@style/MyHintText"
-            app:passwordToggleEnabled="true">
+            app:passwordToggleEnabled="true"
+            android:layout_marginTop="20dp">
 
             <EditText
                 android:id="@+id/editTextEmail"

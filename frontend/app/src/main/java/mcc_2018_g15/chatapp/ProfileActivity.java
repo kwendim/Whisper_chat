@@ -15,8 +15,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -32,8 +35,13 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import org.angmarch.views.NiceSpinner;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -50,6 +58,15 @@ public class ProfileActivity extends AppCompatActivity {
     private String callingActivity = "";
     private String chatId = "";
     boolean editGroup = false;
+    NiceSpinner niceSpinner;
+    private int originalImgRes;
+    private int FULL_RESOLUTION = 0;
+    private int HIGH_RESOLUTION = 1;
+    private int LOW_RESOLUTION = 2;
+    private TextView userNameLabel,imgResLabel;
+    private static final String DEFAULT_GROUP_IMAGE= "https://firebasestorage.googleapis.com/v0/b/mcc-fall-2018-g15.appspot.com/o/group_deault.jpg?alt=media&token=74147f81-2acd-4166-aa2e-434fe1f34be6";
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +80,15 @@ public class ProfileActivity extends AppCompatActivity {
         if(intent.hasExtra("editGroup")){
             editGroup = true;
         }
+
+        userNameLabel = findViewById(R.id.username_txtview);
+        imgResLabel = findViewById(R.id.image_resolution);
+        niceSpinner = findViewById(R.id.spinner1);
+        List<String> dataset = new LinkedList<>(Arrays.asList("Full", "High", "Low"));
+        niceSpinner.attachDataSource(dataset);
         userId = FirebaseAuth.getInstance().getUid();
+
+
         editTextUsername = findViewById(R.id.editTextUsername);
         imageViewAvatar = findViewById(R.id.imageViewAvatar);
         final Button buttonSave = findViewById(R.id.buttonSave);
@@ -73,10 +98,21 @@ public class ProfileActivity extends AppCompatActivity {
 
         if (callingActivity.equals("SearchUsersActivity")) {
             editTextUsername.setHint("Group name");
+            userNameLabel.setText("Group Name");
+            Glide.with(this).load(DEFAULT_GROUP_IMAGE).apply(new RequestOptions().fitCenter()).into(imageViewAvatar);
+            niceSpinner.setVisibility(View.GONE);
+            imgResLabel.setVisibility(View.GONE);
+
             if (intent.hasExtra("chatId"))
                 chatId = intent.getStringExtra("chatId");
+
         } else if(editGroup){
-            editTextUsername.setHint("Update");
+            editTextUsername.setHint("Group name");
+            userNameLabel.setText("Group Name");
+            Glide.with(this).load(DEFAULT_GROUP_IMAGE).apply(new RequestOptions().fitCenter()).into(imageViewAvatar);
+            niceSpinner.setVisibility(View.GONE);
+            imgResLabel.setVisibility(View.GONE);
+
             if (intent.hasExtra("chatId"))
                 chatId = intent.getStringExtra("chatId");
             displayCurrentInfo();
@@ -107,26 +143,10 @@ public class ProfileActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 editTextUsername.setText(dataSnapshot.child("dialogName").getValue().toString());
                 editTextUsername.setSelection(editTextUsername.getText().length());
-
+                userNameLabel.setText("Group Name");
                 orgAvatarUri = dataSnapshot.child("dialogPhoto").getValue().toString();
-                StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(orgAvatarUri);
-
-                httpsReference.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                    @Override
-                    public void onSuccess(byte[] bytes) {
-
-                        Bitmap avatarBmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                        imageViewAvatar.setImageBitmap(Bitmap.createScaledBitmap(avatarBmp, imageViewAvatar.getWidth(),
-                                imageViewAvatar.getHeight(), false));
-                        progressDialog.dismiss();
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception exception) {
-                        // Handle any errors
-                        progressDialog.dismiss();
-                    }
-                });
+                Glide.with(ProfileActivity.this).load(orgAvatarUri).apply(new RequestOptions().fitCenter()).into(imageViewAvatar);
+                progressDialog.dismiss();
 
             }
 
@@ -205,15 +225,17 @@ public class ProfileActivity extends AppCompatActivity {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         InputStream inputStream;
         if (requestCode == PICK_IMAGE) {
-            updatedAvatarUri = data.getData();
-            if (updatedAvatarUri != null) {
-                try {
-                    inputStream = getContentResolver().openInputStream(updatedAvatarUri);
-                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                    Bitmap compressedBitmap = resizeBitmap(bitmap, 320);
-                    imageViewAvatar.setImageBitmap(compressedBitmap);
-                } catch (IOException e) {
+            if(data!=null) {
+                updatedAvatarUri = data.getData();
+                if (updatedAvatarUri != null) {
+                    try {
+                        inputStream = getContentResolver().openInputStream(updatedAvatarUri);
+                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                        Bitmap compressedBitmap = resizeBitmap(bitmap, 320);
+                        imageViewAvatar.setImageBitmap(compressedBitmap);
+                    } catch (IOException e) {
 
+                    }
                 }
             }
         }
@@ -226,32 +248,29 @@ public class ProfileActivity extends AppCompatActivity {
         }
         progressDialog.setMessage("Loading");
         progressDialog.show();
-        usersRef.child(userId).addValueEventListener(new ValueEventListener() {
+        usersRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 orgUsername = snapshot.child("name").getValue().toString();
                 editTextUsername.setText(orgUsername);
                 editTextUsername.setSelection(editTextUsername.getText().length());
 
-                orgAvatarUri = snapshot.child("avatar").getValue().toString();
-                StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(orgAvatarUri);
 
-                httpsReference.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                    @Override
-                    public void onSuccess(byte[] bytes) {
+                String imageResolution = snapshot.child("imgRes").getValue(String.class);
+                if (imageResolution.equals("low")){
+                    niceSpinner.setSelectedIndex(LOW_RESOLUTION);
+                }
+                else if (imageResolution.equals("high")) {
+                    niceSpinner.setSelectedIndex(HIGH_RESOLUTION);
+                } else {
+                    niceSpinner.setSelectedIndex(FULL_RESOLUTION);
+                }
 
-                        Bitmap avatarBmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                        imageViewAvatar.setImageBitmap(Bitmap.createScaledBitmap(avatarBmp, imageViewAvatar.getWidth(),
-                                imageViewAvatar.getHeight(), false));
-                        progressDialog.dismiss();
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception exception) {
-                        // Handle any errors
-                        progressDialog.dismiss();
-                    }
-                });
+
+                originalImgRes = niceSpinner.getSelectedIndex();
+                orgAvatarUri = snapshot.child("avatar").getValue(String.class);
+                Glide.with(ProfileActivity.this).load(orgAvatarUri).apply(new RequestOptions().fitCenter()).into(imageViewAvatar);
+                progressDialog.dismiss();
 
             }
 
@@ -277,7 +296,18 @@ public class ProfileActivity extends AppCompatActivity {
         return Bitmap.createScaledBitmap(mBitMap, width, height, true);
     }
 
-    private void updatedUserNameAndPhoto(final String username, final Uri imageUri) {
+    private void updatedUserNameAndPhoto(final String username, final Uri imageUri, final int imgRes) {
+
+        final String newRes;
+        if (imgRes == LOW_RESOLUTION){
+            newRes = "low";
+        } else if (imgRes == HIGH_RESOLUTION){
+            newRes = "high";
+        }else{
+            newRes="full";
+        }
+
+
         if (updatedAvatarUri != null) {
             final StorageReference storageReference =
                     FirebaseStorage.getInstance()
@@ -301,9 +331,12 @@ public class ProfileActivity extends AppCompatActivity {
             }).addOnCompleteListener(new OnCompleteListener<Uri>() {
                 @Override
                 public void onComplete(@NonNull Task<Uri> task) {
+
                     if (task.isSuccessful()) {
-                        User newUser = new User(username, orgAvatarUri, "full", "dark");
-                        usersRef.child(userId).setValue(newUser);
+
+                        usersRef.child(userId).child("name").setValue(username);
+                        usersRef.child(userId).child("avatar").setValue(task.getResult().toString());
+                        usersRef.child(userId).child("imgRes").setValue(newRes);
                         startActivity(new Intent(ProfileActivity.this, DialogsActivity.class));
                         finish();
 
@@ -312,8 +345,9 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             });
         } else {
-            User newUser = new User(username, orgAvatarUri, "full", "dark");
-            usersRef.child(userId).setValue(newUser);
+            usersRef.child(userId).child("name").setValue(username);
+            usersRef.child(userId).child("avatar").setValue(orgAvatarUri);
+            usersRef.child(userId).child("imgRes").setValue(newRes);
             progressDialog.dismiss();
             startActivity(new Intent(ProfileActivity.this, DialogsActivity.class));
             finish();
@@ -330,8 +364,10 @@ public class ProfileActivity extends AppCompatActivity {
 
         progressDialog.setMessage("Updating");
         progressDialog.show();
+        niceSpinner.getSelectedIndex();
 
-        if (updatedAvatarUri == null && newUsername.equals(orgUsername)) {
+
+        if (updatedAvatarUri == null && newUsername.equals(orgUsername) && (originalImgRes == niceSpinner.getSelectedIndex())) {
             progressDialog.dismiss();
             startActivity(new Intent(ProfileActivity.this, DialogsActivity.class));
             finish();
@@ -342,11 +378,12 @@ public class ProfileActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists() && !newUsername.equals(orgUsername)) {
-                    Toast.makeText(ProfileActivity.this, "Username doesn't exist"
+                    Toast.makeText(ProfileActivity.this, "Username already exist"
                             , Toast.LENGTH_SHORT).show();
+                    progressDialog.dismiss();
 
                 } else {
-                    updatedUserNameAndPhoto(newUsername, updatedAvatarUri);
+                    updatedUserNameAndPhoto(newUsername, updatedAvatarUri, niceSpinner.getSelectedIndex());
                 }
 
             }

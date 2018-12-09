@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -129,18 +130,12 @@ public class SignUpActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         InputStream inputStream;
-        if (requestCode == PICK_IMAGE && data!=null) {
-            try {
+        if (requestCode == PICK_IMAGE) {
+            if(data!=null) {
                 orgAvatarUri = data.getData();
                 if (orgAvatarUri != null) {
-                    try {
-                        inputStream = getContentResolver().openInputStream(orgAvatarUri);
-                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                        Bitmap compressedBitmap = resizeBitmap(bitmap, 320);
-                        imageViewAvatar.setImageBitmap(compressedBitmap);
-                    } catch (IOException e) {
 
-                    }
+                    Glide.with(this).load(orgAvatarUri).apply(new RequestOptions().fitCenter()).into(imageViewAvatar);
                 }
             }catch (Exception e){}
         }
