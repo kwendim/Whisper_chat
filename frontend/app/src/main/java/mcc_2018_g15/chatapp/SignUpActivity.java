@@ -131,15 +131,14 @@ public class SignUpActivity extends AppCompatActivity {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         InputStream inputStream;
         if (requestCode == PICK_IMAGE) {
-            if(data!=null) {
+            if (data != null) {
                 orgAvatarUri = data.getData();
                 if (orgAvatarUri != null) {
-
                     Glide.with(this).load(orgAvatarUri).apply(new RequestOptions().fitCenter()).into(imageViewAvatar);
                 }
-            }catch (Exception e){}
-        }
+            }
 
+        }
     }
 
     private void addUserWithPhoto(final Uri imageUri) {
