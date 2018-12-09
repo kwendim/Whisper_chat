@@ -8,11 +8,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -28,6 +32,7 @@ import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 
 public class DialogsActivity extends AppCompatActivity{
 
@@ -53,7 +58,7 @@ public class DialogsActivity extends AppCompatActivity{
         database = FirebaseDatabase.getInstance();
         myRef = database.getReference().child("users").child(USER_ID).child("user_chats");
 
-        final DialogsListAdapter dialogsListAdapter = new DialogsListAdapter<>(new ImageLoader() {
+        final DialogsListAdapter dialogsListAdapter = new DialogsListAdapter<>(R.layout.custom_dialog_layout, new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, @Nullable String url, @Nullable Object payload) {
                 try {
@@ -88,7 +93,7 @@ public class DialogsActivity extends AppCompatActivity{
                 // TODO: 11/24/2018 Order by date
                 DatabaseReference chatsRef = database.getReference().child("chats").child(dataSnapshot.getKey());
                 Dialog new_dialog = new Dialog(dataSnapshot.getKey(), "","",
-                        new ArrayList<Author>(), new Message("id", new Author("","","http://i.imgur.com/mRqh5w1.png"), "", calendar.getTime()), 0);
+                        new ArrayList<Author>(), new Message("id", new Author("","",""), "", calendar.getTime()), 0);
                 dialogsListAdapter.addItem(0,new_dialog);
                 chatsRef.addValueEventListener(new ValueEventListener() {
                     @Override
@@ -140,8 +145,12 @@ public class DialogsActivity extends AppCompatActivity{
                                     Log.e(TAG, "onDataChange: " + (Boolean)chatsDataSnapshot.child("isGroup").getValue());
                                     if((Boolean) chatsDataSnapshot.child("isGroup").getValue()) {
                                         try {
-                                            if (!chatsDataSnapshot.child("dialogName").getValue().toString().equals(""))
-                                                dialogName = chatsDataSnapshot.child("dialogName").getValue().toString();
+                                            if (!chatsDataSnapshot.child("dialogName").getValue().toString().equals("")){
+                                                String dialogNameValue = chatsDataSnapshot.child("dialogName").getValue().toString();
+                                                if(!dialogNameValue.isEmpty()){
+                                                    dialogName=dialogNameValue;
+                                                }
+                                            }
                                         } catch (Exception e) { }
                                         try {
                                             if (!chatsDataSnapshot.child("dialogPhoto").getValue().toString().equals(""))
@@ -164,13 +173,24 @@ public class DialogsActivity extends AppCompatActivity{
 
 
 //                        new_dialog.setDialogName(TextUtils.join(", ", keyList));
-                        try {
-                            calendar.setTimeInMillis((long) chatsDataSnapshot.child("last_message").child("createdAt").child("time").getValue());
-                        }catch (Exception e){
-                        }
-                        final String last_message=(chatsDataSnapshot.child("last_message").child("text").getValue(String.class));
+                        String messageId = "";
+                        String last_message="";
+                        String avatar="";
+                        String name="";
+                        String id="";
+                        try {   //last_message migh be added later than needed here
+                            if (chatsDataSnapshot.child("last_message").child("createdAt").child("time").getValue(Long.class) > chatsDataSnapshot.child("users").child(USER_ID).getValue(Long.class)) {
+                                messageId = (chatsDataSnapshot.child("last_message").child("id").getValue(String.class));
+                                last_message = (chatsDataSnapshot.child("last_message").child("text").getValue(String.class));
+                                avatar = (chatsDataSnapshot.child("last_message").child("avatar").getValue(String.class));
+                                name = (chatsDataSnapshot.child("last_message").child("name").getValue(String.class));
+                                id = (chatsDataSnapshot.child("last_message").child("id").getValue(String.class));
+                                calendar.setTimeInMillis(chatsDataSnapshot.child("last_message").child("createdAt").child("time").getValue(Long.class));
+                            }
+                        }catch(Exception e){}
+                        final String finalLastMessage = last_message;
                         // TODO: 11/27/2018 update data below with data from last message object
-                        Message msg = new Message("id", new Author("user_id","","http://i.imgur.com/mRqh5w1.png"), last_message, calendar.getTime());
+                        Message msg = new Message(messageId, new Author(id,name,avatar), finalLastMessage, calendar.getTime());
                         new_dialog.setLastMessage(msg);
                         dialogsListAdapter.updateItemById(new_dialog);
                         dialogsListAdapter.updateDialogWithMessage(dataSnapshot.getKey(), msg);
@@ -491,4 +511,38 @@ public class DialogsActivity extends AppCompatActivity{
 
         }
     }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_dialog, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.menu_profile) {
+            Intent profileIntent = new Intent(this, ProfileActivity.class);
+//            galleryIntent.putExtra("chatId", CHAT_ID);
+//            galleryIntent.putExtra("userId",USER_ID);
+
+            startActivity(profileIntent);
+            return true;
+        } else if (id == R.id.menu_logout){
+            firebaseAuth.signOut();
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            startActivity(loginIntent);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
 }

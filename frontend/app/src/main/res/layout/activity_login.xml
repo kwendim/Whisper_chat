@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -12,45 +13,69 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="User Login"
+        <ImageView
+            android:id="@+id/ivLogo"
+            android:layout_height="150dp"
+            android:layout_width="150dp"
+            android:layout_gravity="center_horizontal"
             android:layout_marginTop="50dp"
-            android:id="@+id/textView"
-            android:layout_gravity="center_horizontal" />
+            android:src="@mipmap/ic_launcher"
+            android:layout_marginBottom="20dp"/>
 
-        <EditText
-            android:id="@+id/editTextEmail"
+        <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="15dp"
-            android:hint="Enter email"
-            android:inputType="textEmailAddress" />
+            android:textColorHint="@color/colorPrimary"
+            android:theme="@style/MyHintText"
+            app:passwordToggleEnabled="true">
 
-        <EditText
-            android:id="@+id/editTextPassword"
+            <EditText
+                android:id="@+id/editTextEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="15dp"
+                android:hint="Email"
+                android:inputType="textEmailAddress"
+                android:theme="@style/MyEditText"/>
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="15dp"
-            android:hint="Enter password"
-            android:inputType="textPassword" />
+            android:textColorHint="@color/colorPrimary"
+            android:theme="@style/MyHintText"
+            app:passwordToggleEnabled="true">
+
+            <EditText
+                android:id="@+id/editTextPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="15dp"
+                android:hint="Password"
+                android:inputType="textPassword"
+                android:theme="@style/MyEditText" />
+
+        </android.support.design.widget.TextInputLayout>
+
 
         <Button
             android:id="@+id/buttonSignin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="15dp"
+            android:textColor="@color/white"
+            android:background="@color/colorPrimaryDark"
+            android:textSize="@dimen/dialog_title_text_size"
             android:text="Login" />
 
         <TextView
-            android:text="Don't have an account? Create one here"
             android:id="@+id/textViewSignUp"
-            android:textAlignment="center"
-            android:layout_margin="15dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="15dp"
+            android:textColor="@color/colorPrimary"
+            android:text="Don't have an account? Create one here"
+            android:textAlignment="center" />
 
     </LinearLayout>
 

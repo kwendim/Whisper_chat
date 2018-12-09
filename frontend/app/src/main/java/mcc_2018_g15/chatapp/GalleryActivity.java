@@ -32,6 +32,7 @@ import android.os.Bundle;
     import com.stfalcon.frescoimageviewer.ImageViewer;
 
     import java.io.File;
+    import java.io.IOException;
     import java.text.SimpleDateFormat;
     import java.util.ArrayList;
     import java.util.Collections;
@@ -49,7 +50,37 @@ public class GalleryActivity extends AppCompatActivity {
     private static String CHAT_ID, USER_ID ;
     private static int SORTING_OPTION = 1;
     private String resolution;
+    private long USER_JOIN_TIME;
+    public static boolean wasDialogShown = false;
+    public static int currentPosition = 0,currentViewPosition =0 ;
 
+
+    private static final String KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN";
+    private static final String KEY_CURRENT_POSITION = "CURRENT_POSITION";
+    private static final String KEY_CURRENT_VIEW_POSITION ="CURRENT_VIEW_POSITION" ;
+    public static Map<String,ArrayList<String>> image_message_id = new LinkedHashMap<>();
+
+
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState != null) {
+            wasDialogShown = savedInstanceState.getBoolean(KEY_IS_DIALOG_SHOWN);
+            currentPosition = savedInstanceState.getInt(KEY_CURRENT_POSITION);
+            currentViewPosition = savedInstanceState.getInt(KEY_CURRENT_VIEW_POSITION);
+
+        }
+
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(KEY_IS_DIALOG_SHOWN, ImageRecyclerViewAdapter.isDialogShown);
+        outState.putInt(KEY_CURRENT_POSITION, ImageRecyclerViewAdapter.currentPosition);
+        outState.putInt(KEY_CURRENT_VIEW_POSITION,ImageRecyclerViewAdapter.currentViewPosition);
+        super.onSaveInstanceState(outState);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +104,7 @@ public class GalleryActivity extends AppCompatActivity {
 
         ImagePipelineConfig config = ImagePipelineConfig.newBuilder(this).setProgressiveJpegConfig(new SimpleProgressiveJpegConfig())
                 .setResizeAndRotateEnabledForNetwork(true)
-                .setDownsampleEnabled(true)
+                //.setDownsampleEnabled(true)
                 .setDiskCacheEnabled(true)
                 .setMainDiskCacheConfig(diskCacheConfig)
                 .build();
@@ -85,6 +116,7 @@ public class GalleryActivity extends AppCompatActivity {
 
         CHAT_ID = getIntent().getStringExtra("chatId");
         USER_ID = getIntent().getStringExtra("userId");
+        USER_JOIN_TIME = getIntent().getLongExtra("userJoinTime",0);
 
         DatabaseReference resolution_check = FirebaseDatabase.getInstance().getReference("users").child(USER_ID);
         resolution_check.addValueEventListener(new ValueEventListener() {
@@ -106,8 +138,15 @@ public class GalleryActivity extends AppCompatActivity {
                 }
                 Log.i("galleryResolution", resolution);
                 setUpRecyclerView();
-                getAllImages_date();
-                SORTING_OPTION =1;
+                if (SORTING_OPTION == 3){
+                    getAllImages_label();
+                }
+                else if (SORTING_OPTION ==2){
+                    getAllImages_user();
+                } else{
+                    getAllImages_date();
+                }
+
 
             }
 
@@ -190,12 +229,14 @@ public class GalleryActivity extends AppCompatActivity {
         Log.d("populaterecycler", "Sections:- " + sections.toString());
         SectionedGalleryRecyclerAdapter adapter = new SectionedGalleryRecyclerAdapter(GalleryActivity.this, sections);
         galleryRecycler.setAdapter(adapter);
+
     }
 
 
     private void getAllImages_date(){
         DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
         final Map<String,ArrayList<String>> image_sorter = new LinkedHashMap<>();
+        image_message_id.clear();
 
 
         imagesRef.addValueEventListener(new ValueEventListener() {
@@ -205,20 +246,38 @@ public class GalleryActivity extends AppCompatActivity {
                 Log.e("Count " ,""+snapshot.getChildrenCount());
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
                         if(postSnapshot.hasChild("createdAt")) {
-                            String image_date = new SimpleDateFormat("MMMM dd,yyyy").format(postSnapshot.child("createdAt").getValue(Date.class));
-                            String image_path = postSnapshot.child(resolution).getValue(String.class);
-                            if (image_path == null){
-                                Log.d("image_path_null", "true");
-                                 image_path = postSnapshot.child("url").getValue(String.class);
-                            }
-                            if (image_sorter.get(image_date) == null) {
-                                ArrayList<String> new_element = new ArrayList<>();
-                                new_element.add(image_path);
-                                image_sorter.put(image_date, new_element);
-                            } else {
-                                image_sorter.get(image_date).add(image_path);
-                            }
+                            Date image_time = postSnapshot.child("createdAt").getValue(Date.class);
+                            String full_res = postSnapshot.child("url").getValue(String.class);
+                            String high_res = postSnapshot.child("high_res_url").getValue(String.class);
+                            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(image_time);
 
+                            String low_res = postSnapshot.child("low_res_url").getValue(String.class);
+
+                            ArrayList<String> message_id = new ArrayList<String>();
+                            message_id.add(full_res);
+                            message_id.add(high_res);
+                            message_id.add(low_res);
+                            message_id.add(timeStamp);
+
+
+                            String image_date = new SimpleDateFormat("MMMM dd,yyyy").format(image_time);
+                            String image_path = postSnapshot.child(resolution).getValue(String.class);
+
+                            if(image_time.getTime() > USER_JOIN_TIME ) {
+                                if (image_path == null) {
+                                    Log.d("image_path_null", "true");
+                                    image_path = postSnapshot.child("url").getValue(String.class);
+                                }
+                                if (image_sorter.get(image_date) == null) {
+                                    ArrayList<String> new_element = new ArrayList<>();
+                                    new_element.add(image_path);
+                                    image_sorter.put(image_date, new_element);
+
+                                } else {
+                                    image_sorter.get(image_date).add(image_path);
+                                }
+                                image_message_id.put(image_path,message_id);
+                            }
                             Log.d("haschild", image_sorter.toString());
                         }
                 }
@@ -249,6 +308,7 @@ public class GalleryActivity extends AppCompatActivity {
         DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
         final Map<String,ArrayList<String>> image_sorter = new HashMap<>();
         final DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
+        image_message_id.clear();
 
 
         imagesRef.addValueEventListener(new ValueEventListener() {
@@ -258,21 +318,38 @@ public class GalleryActivity extends AppCompatActivity {
                 Log.e("Count " ,""+snapshot.getChildrenCount());
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
                     if(postSnapshot.hasChild("id")) {
+                        Date image_time = postSnapshot.child("createdAt").getValue(Date.class);
+                        String full_res = postSnapshot.child("url").getValue(String.class);
+                        String high_res = postSnapshot.child("high_res_url").getValue(String.class);
+                        String low_res = postSnapshot.child("low_res_url").getValue(String.class);
+                        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(image_time);
+
+
+                        ArrayList<String> message_id = new ArrayList<String>();
+                        message_id.add(full_res);
+                        message_id.add(high_res);
+                        message_id.add(low_res);
+                        message_id.add(timeStamp);
+
+
                         String user_id = postSnapshot.child("id").getValue(String.class);
                         String image_path = postSnapshot.child(resolution).getValue(String.class);
-                        if (image_path == null){
-                            Log.d("image_path_null", "true");
-                            image_path = postSnapshot.child("url").getValue(String.class);
-                        }
-                        if (image_sorter.get(user_id) == null) {
-                            ArrayList<String> new_element = new ArrayList<>();
-                            new_element.add(image_path);
-                            image_sorter.put(user_id, new_element);
-                        } else {
-                            image_sorter.get(user_id).add(image_path);
-                        }
+                        if(image_time.getTime() > USER_JOIN_TIME ) {
 
-                        Log.d("haschild", image_sorter.toString());
+                            if (image_path == null) {
+                                Log.d("image_path_null", "true");
+                                image_path = postSnapshot.child("url").getValue(String.class);
+                            }
+                            if (image_sorter.get(user_id) == null) {
+                                ArrayList<String> new_element = new ArrayList<>();
+                                new_element.add(image_path);
+                                image_sorter.put(user_id, new_element);
+                            } else {
+                                image_sorter.get(user_id).add(image_path);
+                            }
+                            image_message_id.put(image_path,message_id);
+                            Log.d("haschild", image_sorter.toString());
+                        }
                     }
                 }
 
@@ -318,6 +395,7 @@ public class GalleryActivity extends AppCompatActivity {
     private void getAllImages_label() {
         DatabaseReference imagesRef = FirebaseDatabase.getInstance().getReference("image_urls").child(CHAT_ID);
         final Map<String,ArrayList<String>> image_sorter = new HashMap<>();
+        image_message_id.clear();
 
 
         imagesRef.addValueEventListener(new ValueEventListener() {
@@ -326,22 +404,39 @@ public class GalleryActivity extends AppCompatActivity {
 
                 Log.e("Count " ,"" + snapshot.getChildrenCount());
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                        Date image_time = postSnapshot.child("createdAt").getValue(Date.class);
+                    String full_res = postSnapshot.child("url").getValue(String.class);
+                    String high_res = postSnapshot.child("high_res_url").getValue(String.class);
+                    String low_res = postSnapshot.child("low_res_url").getValue(String.class);
+                    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(image_time);
+
+
+
+                    ArrayList<String> message_id = new ArrayList<String>();
+                    message_id.add(full_res);
+                    message_id.add(high_res);
+                    message_id.add(low_res);
+                    message_id.add(timeStamp);
+
                         String label = postSnapshot.child("label").getValue(String.class);
                         String image_path = postSnapshot.child(resolution).getValue(String.class);
-                    if (image_path == null){
-                        Log.d("image_path_null", "true");
-                        image_path = postSnapshot.child("url").getValue(String.class);
-                    }
-                        if(image_sorter.get(label)==null){
+
+                    if(image_time.getTime() > USER_JOIN_TIME ) {
+
+                        if (image_path == null) {
+                            Log.d("image_path_null", "true");
+                            image_path = postSnapshot.child("url").getValue(String.class);
+                        }
+                        if (image_sorter.get(label) == null) {
                             ArrayList<String> new_element = new ArrayList<>();
                             new_element.add(image_path);
-                            image_sorter.put(label,new_element);
-                        }
-                        else {
+                            image_sorter.put(label, new_element);
+                        } else {
                             image_sorter.get(label).add(image_path);
                         }
-
+                        image_message_id.put(image_path,message_id);
                         Log.d("haschild", image_sorter.toString());
+                    }
                 }
 
                 if(image_sorter.get("others")!=null) {
@@ -361,4 +456,5 @@ public class GalleryActivity extends AppCompatActivity {
             }
         });
     }
+
 }

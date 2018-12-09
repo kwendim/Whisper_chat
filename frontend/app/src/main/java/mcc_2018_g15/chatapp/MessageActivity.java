@@ -92,7 +92,7 @@ public class MessageActivity extends AppCompatActivity {
     private boolean isGroup;
     private boolean isAdmin = false;
     private HashMap<String,Long> memberJoiningDates = new HashMap<String, Long>();
-    private long USER_JOIN_TIME ;
+    private  long USER_JOIN_TIME ;
 
 
 
@@ -188,11 +188,6 @@ public class MessageActivity extends AppCompatActivity {
 
                                     String chatter = dataSnapshot.child("name").getValue(String.class);
                                     userTitleTextView.setText(chatter);
-                                     String adminCheck= dataSnapshot.child("user_chats").child(CHAT_ID).getValue(String.class);
-                                    if(adminCheck.equals("admin")){
-                                        isAdmin = true;
-                                    }
-
 
                                     String chatter_avatar = dataSnapshot.child("avatar").getValue(String.class);
                                     //TODO Replcae with default avatar
@@ -334,19 +329,37 @@ public class MessageActivity extends AppCompatActivity {
         myRef.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
-                Message new_message = dataSnapshot.getValue(Message.class);
-                Author new_author = dataSnapshot.child("user").getValue(Author.class);
-                new_message.setUser(new_author);
-                Log.d("everything: " , new_message.print());
-                String isLoading = new_message.getImageUrl();
-                Date messageTime = new_message.getCreatedAt();
-                Log.d("message_time_comare", messageTime.getTime() + ", " + USER_JOIN_TIME);
+                final Message new_message = dataSnapshot.getValue(Message.class);
+                DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
+                userref.addListenerForSingleValueEvent(new ValueEventListener() {
 
-                if(messageTime.getTime() > USER_JOIN_TIME) {
-                if (isLeavingChat) {
-                    return;
-                }
-                adapter.addToStart(new_message,true);
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        String username = dataSnapshot.child(new_message.getId()).child("name").getValue(String.class);
+                        String avatar = dataSnapshot.child(new_message.getId()).child("avatar").getValue(String.class);
+                        Author new_author = new Author(new_message.getId(),username,avatar);
+                        new_message.setUser(new_author);
+                        Log.d("everything: " , new_message.print());
+                        String isLoading = new_message.getImageUrl();
+                        Date messageTime = new_message.getCreatedAt();
+                        Log.d("message_time_comare", messageTime.getTime() + ", " + USER_JOIN_TIME);
+
+                        if(messageTime.getTime() > USER_JOIN_TIME) {
+                            if (isLeavingChat) {
+                                return;
+                            }
+                            adapter.addToStart(new_message,true);
+
+                    }
+
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                });
+
 //                if (isLoading != null) {
 //                    if (isLoading.equals(LOADING_IMAGE_URL) && new_author.getId() != USER_ID) {
 //                    } else {
@@ -356,7 +369,7 @@ public class MessageActivity extends AppCompatActivity {
 //                } else {
 //                    adapter.addToStart(new_message, true);
 //                }
-                }
+
 
             }
 
@@ -368,8 +381,11 @@ public class MessageActivity extends AppCompatActivity {
 
                     Author new_author = dataSnapshot.child("user").getValue(Author.class);
                     new_message.setUser(new_author);
-                    Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
-                    new_message.setImage(new_image);
+                    if(dataSnapshot.child("imageurl").exists()){
+                        Message.Image new_image = dataSnapshot.child("imageurl").getValue(Message.Image.class);
+                        new_message.setImage(new_image);
+                    }
+
                     Log.d("boutotloadimage: ", "right here + " + prevChildKey);
                     adapter.update(new_message);
 //                    if(new_author.getId().equals(USER_ID)) {
@@ -447,6 +463,7 @@ public class MessageActivity extends AppCompatActivity {
             Intent galleryIntent = new Intent(this, GalleryActivity.class);
             galleryIntent.putExtra("chatId", CHAT_ID);
             galleryIntent.putExtra("userId",USER_ID);
+            galleryIntent.putExtra("userJoinTime", USER_JOIN_TIME);
 
             startActivity(galleryIntent);
             return true;
@@ -461,25 +478,35 @@ public class MessageActivity extends AppCompatActivity {
             startActivity(addMember);
             return true;
         } else if (id == R.id.menu_leaveChat){
-            Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
-            removeFromUsersChat.addOnCompleteListener(new OnCompleteListener<Void>() {
+            Task<Void> removeUserfromChat = FirebaseDatabase.getInstance().getReference("chats").child(CHAT_ID).child("users").child(USER_ID).removeValue();
+
+            removeUserfromChat.addOnCompleteListener(new OnCompleteListener<Void>() {
                 @Override
                 public void onComplete(@NonNull Task<Void> task) {
-                    isLeavingChat = true;
-                    Message leaving_message = new Message(USER_ID,author,USER_ID + "has left the chat");
-                    Log.d("LeavingMessage","sent");
-                    Task<Void> final_message = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID).push().setValue(leaving_message);
-                    final_message.addOnCompleteListener(new OnCompleteListener<Void>() {
+                    Task<Void> removeFromUsersChat = FirebaseDatabase.getInstance().getReference("users").child(USER_ID).child("user_chats").child(CHAT_ID).removeValue();
+                    removeFromUsersChat.addOnCompleteListener(new OnCompleteListener<Void>() {
                         @Override
                         public void onComplete(@NonNull Task<Void> task) {
-                            Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
-                            startActivity(backtodialog);
-                            finish();
+                            isLeavingChat = true;
+                            Message leaving_message = new Message(USER_ID,author,USER_ID + "has left the chat");
+                            Log.d("LeavingMessage","sent");
+                            Task<Void> final_message = FirebaseDatabase.getInstance().getReference("chat_msgs").child(CHAT_ID).push().setValue(leaving_message);
+                            final_message.addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
+                                    startActivity(backtodialog);
+                                    finish();
+                                }
+                            });
+
                         }
                     });
-
                 }
             });
+
+
+
             return true;
 
         }else if (id == R.id.menu_editGroup) {
@@ -488,6 +515,7 @@ public class MessageActivity extends AppCompatActivity {
             Intent editGroup = new Intent(MessageActivity.this, ProfileActivity.class);
             editGroup.putExtra("editGroup", true);
             editGroup.putExtra("chatId", CHAT_ID);
+            startActivity(editGroup);
             return true;
         }
 
