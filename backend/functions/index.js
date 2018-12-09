@@ -71,22 +71,33 @@ exports.addMessage = functions.https.onRequest((req, res) => {
               const title = snapshot.val().user.name;
               const text = snapshot.val().text;
 
+              const chatDetails = await admin.database().ref(`/chats/${context.params.chat_id}`).once('value');
+
+              var full_title = "";
+
+              if(chatDetails.val().isGroup) {
+                full_title = `${title} to ${chatDetails.val().dialogName}`;
+              } else {
+                full_title = `${title} sent you a message`;
+              }
+
               if(!text) {
                 // its a image
                 return null;
               }
               const small_text = text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '' ;
               const payload = {
-                notification: {
-                  title: `${title} posted ${text ? 'a message' : 'an image'}`,
+                data: {
+                  title: full_title,
                   body: `${title} : ${small_text}`,
                   icon: snapshot.val().user.avatar || '/images/profile_placeholder.png',
                   click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
-                },
-                data : {
+                // },
+                // data : {
                   "picture_url" : snapshot.val().imageurl ? snapshot.val().imageurl.url : "",
                   "avatar" : snapshot.val().user.avatar,
                   "big_text" : text ? text : "",
+                  "chatId" : context.params.chat_id,
                 }
 
               };
@@ -114,11 +125,16 @@ exports.addMessage = functions.https.onRequest((req, res) => {
                   var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
                   var fcm_token = tokenObject.val();
                   console.log("tok : " + fcm_token);
-                  tokens.push(fcm_token);
+                  if (fcm_token && fcm_token != "") {
+                    tokens.push(fcm_token);
+                  }
                 }
                 console.log("Tokens : " + tokens);
                 // Send notifications to all tokens.
                 //const response = await admin.messaging().sendToCondition(true, payload);
+                if(tokens.length < 1 || tokens[0] == "") {
+                  return null;
+                }
                 const response = await admin.messaging().sendToDevice(tokens, payload);
 
                 await cleanupTokens(response, tokens);
@@ -149,11 +165,14 @@ console.log("new group : " + snapshot.val().dialogName);
                   const dialogName = snapshot.val().dialogName || "";
                   // const text = snapshot.val().text;
                   const payload = {
-                    notification: {
+                    data: {
                       title: `You were added to chat ${dialogName}`,
                       // body: text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '',
                       icon: snapshot.val().dialogPhoto || '/images/profile_placeholder.png',
                       click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
+                    // },
+                    // data : {
+                      "chatId" : context.params.chat_id,
                     }
                   };
 
@@ -166,11 +185,16 @@ console.log("new group : " + snapshot.val().dialogName);
                       var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
                       var fcm_token = tokenObject.val();
                       console.log("tok : " + fcm_token);
-                      tokens.push(fcm_token);
+                      if (fcm_token && fcm_token != "") {
+                        tokens.push(fcm_token);
+                      }
                     }
                     console.log("Tokens : " + tokens);
                     // Send notifications to all tokens.
                     //const response = await admin.messaging().sendToCondition(true, payload);
+                    if(tokens.length < 1 || tokens[0] == "") {
+                      return null;
+                    }
                     const response = await admin.messaging().sendToDevice(tokens, payload);
 
                     await cleanupTokens(response, tokens);
@@ -245,16 +269,17 @@ async function sendImageNotification(snapshot, context) {
 
   const small_text = text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '' ;
   const payload = {
-    notification: {
+    data: {
       title: `${title} posted ${text ? 'a message' : 'an image'}`,
-      body: `${title} : ${small_text}`,
+      body: "", //`${title} : ${small_text}`,
       icon: snapshot.val().user.avatar || '/images/profile_placeholder.png',
       click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
-    },
-    data : {
+    // },
+    // data : {
       "picture_url" : snapshot.val().imageurl ? snapshot.val().imageurl.url : "",
       "avatar" : snapshot.val().user.avatar,
       "big_text" : text ? text : "",
+      "chatId" : context.params.chat_id,
     }
 
   };
@@ -282,11 +307,16 @@ async function sendImageNotification(snapshot, context) {
       var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
       var fcm_token = tokenObject.val();
       console.log("tok : " + fcm_token);
-      tokens.push(fcm_token);
+      if (fcm_token && fcm_token != "") {
+        tokens.push(fcm_token);
+      }
     }
     console.log("Tokens : " + tokens);
     // Send notifications to all tokens.
     //const response = await admin.messaging().sendToCondition(true, payload);
+    if(tokens.length < 1 || tokens[0] == "") {
+      return null;
+    }
     const response = await admin.messaging().sendToDevice(tokens, payload);
 
     await cleanupTokens(response, tokens);
