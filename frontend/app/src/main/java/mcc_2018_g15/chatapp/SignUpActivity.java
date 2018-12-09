@@ -17,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -66,6 +67,7 @@ public class SignUpActivity extends AppCompatActivity {
         editTextConfirmPassword = findViewById(R.id.editTextConfirmPassword);
         editTextUsername = findViewById(R.id.editTextUsername);
         imageViewAvatar = findViewById(R.id.imageViewAvatar);
+        Glide.with(getApplicationContext()).load(DEFAULT_PROFILE).into(imageViewAvatar);
 
         final TextView textViewSignin = findViewById(R.id.textViewSignin);
         final Button buttonSignup = findViewById(R.id.buttonSignup);
@@ -201,7 +203,7 @@ public class SignUpActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if(dataSnapshot.exists()){
-                    Toast.makeText(SignUpActivity.this,"Username doesn't exist"
+                    Toast.makeText(SignUpActivity.this,"Username already exists"
                             ,Toast.LENGTH_SHORT).show();
                 } else {
                     createUser(email, password);
