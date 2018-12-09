@@ -140,14 +140,24 @@ public class DialogsActivity extends AppCompatActivity{
                                                 messageId = (chatsDataSnapshot.child("last_message").child("id").getValue(String.class));
                                                 last_message = (chatsDataSnapshot.child("last_message").child("text").getValue(String.class));
                                                 avatar = (chatsDataSnapshot.child("last_message").child("avatar").getValue(String.class));
-                                                name = (chatsDataSnapshot.child("last_message").child("name").getValue(String.class));
+                                                name = (chatsDataSnapshot.child("last_message").child("user").child("name").getValue(String.class));
                                                 id = (chatsDataSnapshot.child("last_message").child("id").getValue(String.class));
                                                 calendar.setTimeInMillis(chatsDataSnapshot.child("last_message").child("createdAt").child("time").getValue(Long.class));
+
+                                                if(last_message.equals(id + "has left the chat")){
+                                                    Log.d("chatLeaving", "is being done");
+                                                    last_message = name.trim() + " has left the chat";
+                                                }
                                             }
                                         }catch(Exception e){}
+
                                         final String finalLastMessage = last_message;
+
                                         // TODO: 11/27/2018 update data below with data from last message object
                                         Message msg = new Message(messageId, new Author(id,name,avatar), finalLastMessage, calendar.getTime());
+
+
+
                                         new_dialog.setLastMessage(msg);
                                         dialogsListAdapter.updateItemById(new_dialog);
                                         if(dialogsListAdapter.getItemById(new_dialog.getId())==null)
