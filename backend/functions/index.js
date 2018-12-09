@@ -14,6 +14,10 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 
+const runtimeOpts = {
+  timeoutSeconds: 300,
+  memory: '1GB'
+}
 
 
 // Take the text parameter passed to this HTTP endpoint and insert it into the
@@ -66,13 +70,20 @@ exports.addMessage = functions.https.onRequest((req, res) => {
               // Notification details.
               const title = snapshot.val().user.name;
               const text = snapshot.val().text;
+              const small_text = text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '' ;
               const payload = {
                 notification: {
                   title: `${title} posted ${text ? 'a message' : 'an image'}`,
-                  body: text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '',
+                  body: `${title} : ${small_text}`,
                   icon: snapshot.val().user.avatar || '/images/profile_placeholder.png',
                   click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
+                },
+                data : {
+                  "picture_url" : snapshot.val().imageurl ? snapshot.val().imageurl.url : "",
+                  "avatar" : snapshot.val().user.avatar,
+                  "big_text" : text ? text : "",
                 }
+
               };
               // var token = 'dXgE1dM9WZo:APA91bFbABB5e9D9UAvLRnN_RoDqnFofjk78TV_0Us8bB7CZTwDIvDYC2k1vhALphUpz08FoFeR2Ixj8yLxd5FKBmeeOTbwOaBiA85ViOCB_mObrPWzD_fxok3WbofOcZqKnXyVazRE3';
               // const response = await admin.messaging().sendToDevice(token, payload);
@@ -87,8 +98,9 @@ exports.addMessage = functions.https.onRequest((req, res) => {
                 console.log("allMembersIds : " + allMembersIds);
 
                 var selfIndex = allMembersIds.indexOf(snapshot.val().id);
-                allMembersIds.splice(selfIndex,1);
-
+                if(selfIndex > -1) {
+                  allMembersIds.splice(selfIndex,1);
+                }
                 console.log("allMembersIds without self : " + allMembersIds);
 
                 var tokens = [];
@@ -109,12 +121,124 @@ exports.addMessage = functions.https.onRequest((req, res) => {
               }
             });
 
+
+            // Sends a notifications to all users when a new group is created.
+            exports.sendNotificationsForNewGroup = functions.database.ref('/chats/{chat_id}/users/{user_id}')
+            .onCreate(async(userObj, context) => {
+                  // Notification details.
+
+                  const snapshot = await admin.database().ref(`/chats/${context.params.chat_id}`).once('value');
+
+                  if(!snapshot.val().isGroup) {
+                    return null;
+                  }
+
+                  if(snapshot.val().admin == context.params.user_id) {
+                    return null;
+                  }
+
+console.log("new group : " + snapshot.val().dialogName);
+                  // const adminKey = snapshot.val().admin;
+                  // const groupAdmin = await admin.database().ref(`/users/${adminKey}`).once('value');
+
+                  const dialogName = snapshot.val().dialogName || "";
+                  // const text = snapshot.val().text;
+                  const payload = {
+                    notification: {
+                      title: `You were added to chat ${dialogName}`,
+                      // body: text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '',
+                      icon: snapshot.val().dialogPhoto || '/images/profile_placeholder.png',
+                      click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
+                    }
+                  };
+
+                    const allMembersIds = [context.params.user_id];
+                    console.log("allMembersIds : " + allMembersIds);
+
+                    var tokens = [];
+                    for (const memId of allMembersIds)  {
+                      console.log(" memId : " + memId);
+                      var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
+                      var fcm_token = tokenObject.val();
+                      console.log("tok : " + fcm_token);
+                      tokens.push(fcm_token);
+                    }
+                    console.log("Tokens : " + tokens);
+                    // Send notifications to all tokens.
+                    //const response = await admin.messaging().sendToCondition(true, payload);
+                    const response = await admin.messaging().sendToDevice(tokens, payload);
+
+                    await cleanupTokens(response, tokens);
+                    console.log('Notifications have been sent and tokens cleaned up.');
+                });
+
+
+/*                // Sends a notifications to new users on Group.
+                exports.sendNotificationsForNewMember = functions.database.ref('/chats/{chat_id}')
+                .onUpdate(async(change, context) => {
+                      // Notification details.
+                      if(!change.after.val().isGroup) {
+                        return null;
+                      }
+
+                      console.log("new member : " + change.before.val().dialogName + " new: "+ change.after.val().dialogName);
+
+                      // const adminKey = snapshot.val().admin;
+                      // const groupAdmin = await admin.database().ref(`/users/${adminKey}`).once('value');
+
+                      const dialogName = change.after.val().dialogName || "";
+                      // const text = snapshot.val().text;
+                      const payload = {
+                        notification: {
+                          title: `You were added to chat ${dialogName}`,
+                          // body: text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '',
+                          icon: change.after.val().dialogPhoto || '/images/profile_placeholder.png',
+                          click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
+                        }
+                      };
+
+                        const allMembersIds = Object.keys(change.after.val().users);
+                        console.log("allMembersIds : " + allMembersIds);
+
+                        const oldMembersIds = Object.keys(change.before.val().users);
+                        console.log("oldMembersIds : " + allMembersIds);
+
+                        if(oldMembersIds.length < 1) {
+                            return null;
+                        }
+
+                        for(const oldie in oldMembersIds) {
+                          var selfIndex = allMembersIds.indexOf(oldie);
+                          if(selfIndex > -1) {
+                            allMembersIds.splice(selfIndex,1);
+                          }
+                        }
+
+                        console.log("allMembersIds without self : " + allMembersIds);
+
+                        var tokens = [];
+                        for (const memId of allMembersIds)  {
+                          console.log(" memId : " + memId);
+                          var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
+                          var fcm_token = tokenObject.val();
+                          console.log("tok : " + fcm_token);
+                          tokens.push(fcm_token);
+                        }
+                        console.log("Tokens : " + tokens);
+                        // Send notifications to all tokens.
+                        //const response = await admin.messaging().sendToCondition(true, payload);
+                        const response = await admin.messaging().sendToDevice(tokens, payload);
+
+                        await cleanupTokens(response, tokens);
+                        console.log('Notifications have been sent and tokens cleaned up.');
+                    });
+*/
             /**
              * Function
              * When an image is uploaded we find label by the Cloud Vision
              * API and resize it using ImageMagick.
              */
-            exports.labelImagesNew = functions.database.ref('/chat_msgs/{chat_id}/{chat_msg_id}')
+            exports.labelImagesNew = functions.runWith(runtimeOpts).database.ref('/chat_msgs/{chat_id}/{chat_msg_id}')
             .onUpdate(async(change, context) => {
 
               console.log("Before : " + change.before.val().imageurl.url)
