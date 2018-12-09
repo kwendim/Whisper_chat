@@ -488,6 +488,7 @@ public class MessageActivity extends AppCompatActivity {
             Intent editGroup = new Intent(MessageActivity.this, ProfileActivity.class);
             editGroup.putExtra("editGroup", true);
             editGroup.putExtra("chatId", CHAT_ID);
+            startActivity(editGroup);
             return true;
         }
 

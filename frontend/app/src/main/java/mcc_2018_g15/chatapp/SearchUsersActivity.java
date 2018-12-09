@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -161,7 +162,7 @@ public class SearchUsersActivity extends AppCompatActivity {
                                                     public void onComplete(DatabaseError databaseError,
                                                                            DatabaseReference databaseReference) {
                                                         String chatID = databaseReference.getKey();
-                                                        chatsRef.child(chatID).child("lastMessage").setValue("");
+                                                        //chatsRef.child(chatID).child("lastMessage").setValue("");
                                                         chatsRef.child(chatID).child("isGroup").setValue(false);
                                                         chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
                                                         chatsRef.child(chatID).child("users").child(userId).setValue(System.currentTimeMillis());
@@ -285,8 +286,10 @@ public class SearchUsersActivity extends AppCompatActivity {
                                         return;
                                     }
                                     String chatID = databaseReference.getKey();
-                                    chatsRef.child(chatID).child("lastMessage").setValue("");
+                                    //chatsRef.child(chatID).child("lastMessage").setValue("");
                                     chatsRef.child(chatID).child("isGroup").setValue(true);
+                                    chatsRef.child(chatID).child("dialogPhoto").setValue("https://firebasestorage.googleapis.com/v0/b/mcc-fall-2018-g15.appspot.com/o/group_deault.jpg?alt=media&token=74147f81-2acd-4166-aa2e-434fe1f34be6");
+                                    chatsRef.child(chatID).child("dialogName").setValue("");
                                     chatsRef.child(chatID).child("users").child(USER_ID).setValue(System.currentTimeMillis());
                                     chatsRef.child(chatID).child("admin").setValue(USER_ID);
                                     for (int i = 0; i < groupMembers.size(); i++) {

@@ -49,6 +49,7 @@ public class ProfileActivity extends AppCompatActivity {
     private String userId;
     private String callingActivity = "";
     private String chatId = "";
+    boolean editGroup = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,21 +60,29 @@ public class ProfileActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent.hasExtra("callingActivity"))
             callingActivity = intent.getStringExtra("callingActivity");
-
+        if(intent.hasExtra("editGroup")){
+            editGroup = true;
+        }
         userId = FirebaseAuth.getInstance().getUid();
         editTextUsername = findViewById(R.id.editTextUsername);
         imageViewAvatar = findViewById(R.id.imageViewAvatar);
         final Button buttonSave = findViewById(R.id.buttonSave);
         usersRef = FirebaseDatabase.getInstance().getReference().child("users");
 
+        progressDialog = new ProgressDialog(this);
+
         if (callingActivity.equals("SearchUsersActivity")) {
             editTextUsername.setHint("Group name");
             if (intent.hasExtra("chatId"))
                 chatId = intent.getStringExtra("chatId");
+        } else if(editGroup){
+            editTextUsername.setHint("Update");
+            if (intent.hasExtra("chatId"))
+                chatId = intent.getStringExtra("chatId");
+            displayCurrentInfo();
         } else {
             getProfileData();
         }
-        progressDialog = new ProgressDialog(this);
 
         imageViewAvatar.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
@@ -82,7 +91,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
         buttonSave.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
-                if (callingActivity.equals("SearchUsersActivity"))
+                if (callingActivity.equals("SearchUsersActivity") || editGroup)
                     saveGroupInfo();
                 else
                     updateUser();
@@ -90,6 +99,42 @@ public class ProfileActivity extends AppCompatActivity {
         });
 
 
+    }
+
+    private void displayCurrentInfo() {
+        databaseRef.child("chats").child(chatId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                editTextUsername.setText(dataSnapshot.child("dialogName").getValue().toString());
+                editTextUsername.setSelection(editTextUsername.getText().length());
+
+                orgAvatarUri = dataSnapshot.child("dialogPhoto").getValue().toString();
+                StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(orgAvatarUri);
+
+                httpsReference.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                    @Override
+                    public void onSuccess(byte[] bytes) {
+
+                        Bitmap avatarBmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        imageViewAvatar.setImageBitmap(Bitmap.createScaledBitmap(avatarBmp, imageViewAvatar.getWidth(),
+                                imageViewAvatar.getHeight(), false));
+                        progressDialog.dismiss();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        // Handle any errors
+                        progressDialog.dismiss();
+                    }
+                });
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
     }
 
     private void saveGroupInfo() {
@@ -122,7 +167,8 @@ public class ProfileActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
 //                        User newUser = new User(username, orgAvatarUri, "full", "dark");
 //                        usersRef.child(userId).setValue(newUser);
-                        databaseRef.child("chats").child(chatId).child("dialogName").setValue(newUsername);
+                        if(!newUsername.isEmpty())
+                            databaseRef.child("chats").child(chatId).child("dialogName").setValue(newUsername);
                         databaseRef.child("chats").child(chatId).child("dialogPhoto").setValue(task.getResult().toString());
                         progressDialog.dismiss();
                         Intent chatIntent = new Intent(ProfileActivity.this, MessageActivity.class);
@@ -136,8 +182,9 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             });
         } else {
-            databaseRef.child("chats").child(chatId).child("dialogName").setValue(newUsername);
-            databaseRef.child("chats").child(chatId).child("dialogPhoto").setValue("https://firebasestorage.googleapis.com/v0/b/mcc-fall-2018-g15.appspot.com/o/group_deault.jpg?alt=media&token=74147f81-2acd-4166-aa2e-434fe1f34be6");
+            if(!newUsername.isEmpty())
+                databaseRef.child("chats").child(chatId).child("dialogName").setValue(newUsername);
+//            databaseRef.child("chats").child(chatId).child("dialogPhoto").setValue("https://firebasestorage.googleapis.com/v0/b/mcc-fall-2018-g15.appspot.com/o/group_deault.jpg?alt=media&token=74147f81-2acd-4166-aa2e-434fe1f34be6");
             progressDialog.dismiss();
             Intent chatIntent = new Intent(ProfileActivity.this, MessageActivity.class);
             chatIntent.putExtra("chatId", chatId);
