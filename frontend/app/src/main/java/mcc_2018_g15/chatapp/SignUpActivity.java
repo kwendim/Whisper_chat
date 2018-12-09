@@ -271,6 +271,11 @@ public class SignUpActivity extends AppCompatActivity {
             Toast.makeText(this,"Please enter username",Toast.LENGTH_SHORT).show();
             return false;
         }
+        
+        if (username.length() < 3) {
+            Toast.makeText(this,"Username has to be at least three characters",Toast.LENGTH_SHORT).show();
+            return false;
+        }
 
         if (password.length() < 6 ) {
             Toast.makeText(this,"Password has be to at least six characters",Toast.LENGTH_SHORT).show();
