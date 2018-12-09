@@ -129,18 +129,20 @@ public class SignUpActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         InputStream inputStream;
-        if (requestCode == PICK_IMAGE) {
-            orgAvatarUri = data.getData();
-            if (orgAvatarUri != null) {
-                try {
-                    inputStream = getContentResolver().openInputStream(orgAvatarUri);
-                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                    Bitmap compressedBitmap = resizeBitmap(bitmap, 320);
-                    imageViewAvatar.setImageBitmap(compressedBitmap);
-                } catch (IOException e) {
+        if (requestCode == PICK_IMAGE && data!=null) {
+            try {
+                orgAvatarUri = data.getData();
+                if (orgAvatarUri != null) {
+                    try {
+                        inputStream = getContentResolver().openInputStream(orgAvatarUri);
+                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                        Bitmap compressedBitmap = resizeBitmap(bitmap, 320);
+                        imageViewAvatar.setImageBitmap(compressedBitmap);
+                    } catch (IOException e) {
 
+                    }
                 }
-            }
+            }catch (Exception e){}
         }
 
     }

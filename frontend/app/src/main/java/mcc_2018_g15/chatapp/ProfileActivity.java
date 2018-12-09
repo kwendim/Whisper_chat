@@ -262,45 +262,6 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
-    // TODO: 12/8/2018 Remove if still not used
-    private void getGroupData() {
-        progressDialog.setMessage("Loading");
-        progressDialog.show();
-        usersRef.child(userId).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                orgUsername = snapshot.child("name").getValue().toString();
-                editTextUsername.setText(orgUsername);
-                editTextUsername.setSelection(editTextUsername.getText().length());
-
-                orgAvatarUri = snapshot.child("avatar").getValue().toString();
-                StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(orgAvatarUri);
-
-                httpsReference.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                    @Override
-                    public void onSuccess(byte[] bytes) {
-
-                        Bitmap avatarBmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                        imageViewAvatar.setImageBitmap(Bitmap.createScaledBitmap(avatarBmp, imageViewAvatar.getWidth(),
-                                imageViewAvatar.getHeight(), false));
-                        progressDialog.dismiss();
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception exception) {
-                        // Handle any errors
-                        progressDialog.dismiss();
-                    }
-                });
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                progressDialog.dismiss();
-            }
-        });
-    }
 
     private Bitmap resizeBitmap(Bitmap mBitMap, int maxSize) {
         int width = mBitMap.getWidth();
