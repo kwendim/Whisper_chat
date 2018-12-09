@@ -262,7 +262,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
-    // TODO: 12/8/2018 Remove if still not used 
+    // TODO: 12/8/2018 Remove if still not used
     private void getGroupData() {
         progressDialog.setMessage("Loading");
         progressDialog.show();

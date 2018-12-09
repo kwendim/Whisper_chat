@@ -20,7 +20,7 @@ public class CustomOutcomingImageMessageViewHolder
     public void onBind(Message message) {
         super.onBind(message);
 
-        time.setText("online" + " " + time.getText());
+        time.setText(time.getText());
     }
 
     //Override this method to have ability to pass custom data in ImageLoader for loading image(not avatar).

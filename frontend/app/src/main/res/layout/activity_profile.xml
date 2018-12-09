@@ -6,12 +6,15 @@
     android:background="@color/white"
     tools:context=".ProfileActivity">
 
-    <LinearLayout android:layout_centerVertical="true"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_centerVertical="true"
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="101dp"
+        tools:layout_editor_absoluteY="0dp">
 
-        <ImageView
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imageViewAvatar"
             android:layout_width="100dp"
             android:layout_height="100dp"
@@ -33,6 +36,7 @@
 
         </android.support.design.widget.TextInputLayout>
 
+            android:layout_height="match_parent"
         <Button
             android:id="@+id/buttonSave"
             android:layout_width="match_parent"

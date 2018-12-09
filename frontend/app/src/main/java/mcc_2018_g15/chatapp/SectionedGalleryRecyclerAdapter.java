@@ -26,6 +26,8 @@ import java.util.ArrayList;
 public class SectionedGalleryRecyclerAdapter extends RecyclerView.Adapter<SectionedGalleryRecyclerAdapter.SectionViewHolder> {
 
 
+    private int totalImagesCount =0;
+
     class SectionViewHolder extends RecyclerView.ViewHolder {
         private TextView sectionLabel;
         private RecyclerView imageRecyclerView;
@@ -43,7 +45,11 @@ public class SectionedGalleryRecyclerAdapter extends RecyclerView.Adapter<Sectio
     public SectionedGalleryRecyclerAdapter(Context context,  ArrayList<SectionModel> sectionModelArrayList) {
         this.context = context;
         this.sectionModelArrayList = sectionModelArrayList;
+        this.totalImagesCount = 0;
+
     }
+
+
 
     @Override
     public SectionViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -66,9 +72,13 @@ public class SectionedGalleryRecyclerAdapter extends RecyclerView.Adapter<Sectio
         else{
             holder.imageRecyclerView.setLayoutManager(new GridLayoutManager(context, 8));
         }
+        
 
-        ImageRecyclerViewAdapter adapter = new ImageRecyclerViewAdapter(context, sectionModel.getItemArrayList());
-        holder.imageRecyclerView.setAdapter(adapter);
+            ImageRecyclerViewAdapter adapter = new ImageRecyclerViewAdapter(context, sectionModel.getItemArrayList(),holder.getAdapterPosition());
+            holder.imageRecyclerView.setAdapter(adapter);
+
+
+
         //show toast on click of show all button
 
 
