@@ -70,18 +70,34 @@ exports.addMessage = functions.https.onRequest((req, res) => {
               // Notification details.
               const title = snapshot.val().user.name;
               const text = snapshot.val().text;
+
+              const chatDetails = await admin.database().ref(`/chats/${context.params.chat_id}`).once('value');
+
+              var full_title = "";
+
+              if(chatDetails.val().isGroup) {
+                full_title = `${title} to ${chatDetails.val().dialogName}`;
+              } else {
+                full_title = `${title} sent you a message`;
+              }
+
+              if(!text) {
+                // its a image
+                return null;
+              }
               const small_text = text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '' ;
               const payload = {
-                notification: {
-                  title: `${title} posted ${text ? 'a message' : 'an image'}`,
+                data: {
+                  title: full_title,
                   body: `${title} : ${small_text}`,
                   icon: snapshot.val().user.avatar || '/images/profile_placeholder.png',
                   click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
-                },
-                data : {
+                // },
+                // data : {
                   "picture_url" : snapshot.val().imageurl ? snapshot.val().imageurl.url : "",
                   "avatar" : snapshot.val().user.avatar,
                   "big_text" : text ? text : "",
+                  "chatId" : context.params.chat_id,
                 }
 
               };
@@ -109,11 +125,16 @@ exports.addMessage = functions.https.onRequest((req, res) => {
                   var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
                   var fcm_token = tokenObject.val();
                   console.log("tok : " + fcm_token);
-                  tokens.push(fcm_token);
+                  if (fcm_token && fcm_token != "") {
+                    tokens.push(fcm_token);
+                  }
                 }
                 console.log("Tokens : " + tokens);
                 // Send notifications to all tokens.
                 //const response = await admin.messaging().sendToCondition(true, payload);
+                if(tokens.length < 1 || tokens[0] == "") {
+                  return null;
+                }
                 const response = await admin.messaging().sendToDevice(tokens, payload);
 
                 await cleanupTokens(response, tokens);
@@ -144,11 +165,14 @@ console.log("new group : " + snapshot.val().dialogName);
                   const dialogName = snapshot.val().dialogName || "";
                   // const text = snapshot.val().text;
                   const payload = {
-                    notification: {
+                    data: {
                       title: `You were added to chat ${dialogName}`,
                       // body: text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '',
                       icon: snapshot.val().dialogPhoto || '/images/profile_placeholder.png',
                       click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
+                    // },
+                    // data : {
+                      "chatId" : context.params.chat_id,
                     }
                   };
 
@@ -161,11 +185,16 @@ console.log("new group : " + snapshot.val().dialogName);
                       var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
                       var fcm_token = tokenObject.val();
                       console.log("tok : " + fcm_token);
-                      tokens.push(fcm_token);
+                      if (fcm_token && fcm_token != "") {
+                        tokens.push(fcm_token);
+                      }
                     }
                     console.log("Tokens : " + tokens);
                     // Send notifications to all tokens.
                     //const response = await admin.messaging().sendToCondition(true, payload);
+                    if(tokens.length < 1 || tokens[0] == "") {
+                      return null;
+                    }
                     const response = await admin.messaging().sendToDevice(tokens, payload);
 
                     await cleanupTokens(response, tokens);
@@ -233,6 +262,67 @@ console.log("new group : " + snapshot.val().dialogName);
                         console.log('Notifications have been sent and tokens cleaned up.');
                     });
 */
+
+async function sendImageNotification(snapshot, context) {
+  const title = snapshot.val().user.name;
+  const text = snapshot.val().text;
+
+  const small_text = text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '' ;
+  const payload = {
+    data: {
+      title: `${title} posted ${text ? 'a message' : 'an image'}`,
+      body: "", //`${title} : ${small_text}`,
+      icon: snapshot.val().user.avatar || '/images/profile_placeholder.png',
+      click_action: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com`,
+    // },
+    // data : {
+      "picture_url" : snapshot.val().imageurl ? snapshot.val().imageurl.url : "",
+      "avatar" : snapshot.val().user.avatar,
+      "big_text" : text ? text : "",
+      "chatId" : context.params.chat_id,
+    }
+
+  };
+  // var token = 'dXgE1dM9WZo:APA91bFbABB5e9D9UAvLRnN_RoDqnFofjk78TV_0Us8bB7CZTwDIvDYC2k1vhALphUpz08FoFeR2Ixj8yLxd5FKBmeeOTbwOaBiA85ViOCB_mObrPWzD_fxok3WbofOcZqKnXyVazRE3';
+  // const response = await admin.messaging().sendToDevice(token, payload);
+  // Get the list of device tokens.
+  // const allTokens = await admin.database().ref('').once('value');
+  const allMembers = await admin.database().ref(`/chats/${context.params.chat_id}/users`).once('value');
+  console.log("allMembers : " + allMembers.val());
+  if (allMembers.exists()) {
+    // Listing all device tokens to send a notification to.
+    const allMembersIds = Object.keys(allMembers.val());
+    // const allMembersIds = [allMembers.val()];
+    console.log("allMembersIds : " + allMembersIds);
+
+    var selfIndex = allMembersIds.indexOf(snapshot.val().id);
+    if(selfIndex > -1) {
+      allMembersIds.splice(selfIndex,1);
+    }
+    console.log("allMembersIds without self : " + allMembersIds);
+
+    var tokens = [];
+    for (const memId of allMembersIds)  {
+      console.log(" memId : " + memId);
+      var tokenObject = await admin.database().ref(`/users/${memId}/fcm_token`).once('value');
+      var fcm_token = tokenObject.val();
+      console.log("tok : " + fcm_token);
+      if (fcm_token && fcm_token != "") {
+        tokens.push(fcm_token);
+      }
+    }
+    console.log("Tokens : " + tokens);
+    // Send notifications to all tokens.
+    //const response = await admin.messaging().sendToCondition(true, payload);
+    if(tokens.length < 1 || tokens[0] == "") {
+      return null;
+    }
+    const response = await admin.messaging().sendToDevice(tokens, payload);
+
+    await cleanupTokens(response, tokens);
+    console.log('Notifications have been sent and tokens cleaned up.');
+  }
+}
             /**
              * Function
              * When an image is uploaded we find label by the Cloud Vision
@@ -247,6 +337,8 @@ console.log("new group : " + snapshot.val().dialogName);
               if( change.after.val().imageurl === undefined || change.before.val().imageurl.url == change.after.val().imageurl.url) {
                 return null;
               }
+
+              await sendImageNotification(change.after,context);
 
               var photoUrl = change.after.val().imageurl.url;
               var bucket = "mcc-fall-2018-g15.appspot.com";

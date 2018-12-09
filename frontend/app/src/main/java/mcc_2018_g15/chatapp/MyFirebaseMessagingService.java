@@ -86,17 +86,19 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private void sendNotification(RemoteMessage.Notification notification, Map<String, String> data) {
         Bitmap icon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
 
-        Intent intent = new Intent(this, DialogsActivity.class);
+        Log.d(TAG, "chat id: " + data.get("chatId"));
+        Intent intent = new Intent(this, MessageActivity.class);
+        intent.putExtra("chatId", data.get("chatId"));
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(notification.getTitle())
-                .setContentText(notification.getBody())
+                .setContentTitle(data.get("title"))
+                .setContentText(data.get("body"))
                 .setAutoCancel(true)
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setContentIntent(pendingIntent)
-                .setContentInfo(notification.getTitle())
+                .setContentInfo(data.get("title"))
                 .setLargeIcon(icon)
                 .setColor(Color.RED)
                 .setLights(Color.RED, 1000, 300)
@@ -109,7 +111,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 URL url = new URL(picture_url);
                 Bitmap bigPicture = BitmapFactory.decodeStream(url.openConnection().getInputStream());
                 notificationBuilder.setStyle(
-                        new NotificationCompat.BigPictureStyle().bigPicture(bigPicture).setSummaryText(notification.getBody())
+                        new NotificationCompat.BigPictureStyle().bigPicture(bigPicture).setSummaryText(data.get("body"))
                 );
             }
         } catch (IOException e) {
