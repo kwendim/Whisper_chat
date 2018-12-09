@@ -25,6 +25,5 @@
         android:text="Create Group"
         android:textColor="@color/white"
         android:textSize="@dimen/dialog_title_text_size"
-        android:background="@color/black_10"
-        android:backgroundTint="@color/black_10" />
+        android:background="@color/colorPrimaryDark"/>
 </android.support.constraint.ConstraintLayout>

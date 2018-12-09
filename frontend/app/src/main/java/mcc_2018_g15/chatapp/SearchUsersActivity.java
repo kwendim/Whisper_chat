@@ -18,6 +18,7 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
@@ -290,7 +291,9 @@ public class SearchUsersActivity extends AppCompatActivity {
                                     if(!groupMembers.contains(USER_ID))
                                         numberOfMembers = 2;
                                     if (groupMembers.size() < numberOfMembers) {
-                                        Snackbar.make(view, "Please select at least three people!", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                                        Toast.makeText(SearchUsersActivity.this, "Please select at least three people to create a group!", Toast.LENGTH_LONG).show();
+
+                                        //Snackbar.make(view, "Please select at least three people!", Snackbar.LENGTH_LONG).setAction("Action", null).show();
                                         return;
                                     }
                                     String chatID = databaseReference.getKey();
