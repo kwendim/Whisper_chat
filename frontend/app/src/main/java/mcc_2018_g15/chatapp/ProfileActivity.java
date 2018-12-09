@@ -159,6 +159,10 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void saveGroupInfo() {
         final String newUsername = editTextUsername.getText().toString().trim();
+        if (newUsername.isEmpty()) {
+            Toast.makeText(this,"Please enter group name",Toast.LENGTH_SHORT).show();
+            return;
+        }
         progressDialog.setMessage("Saving");
         progressDialog.show();
         if (updatedAvatarUri != null) {

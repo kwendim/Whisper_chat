@@ -495,6 +495,7 @@ public class MessageActivity extends AppCompatActivity {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
                                     Intent backtodialog = new Intent(MessageActivity.this, DialogsActivity.class);
+                                    backtodialog.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                     startActivity(backtodialog);
                                     finish();
                                 }
