@@ -135,7 +135,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             notificationManager.createNotificationChannel(channel);
         }
 
-        notificationManager.notify(0, notificationBuilder.build());
+        notificationManager.notify(((int) System.currentTimeMillis()/1000), notificationBuilder.build());
     }
 }
 

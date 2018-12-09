@@ -69,7 +69,7 @@ exports.addMessage = functions.https.onRequest((req, res) => {
         .onCreate(async(snapshot, context) => {
               // Notification details.
               const title = snapshot.val().user.name;
-              const text = snapshot.val().text;
+              var text = snapshot.val().text;
 
               const chatDetails = await admin.database().ref(`/chats/${context.params.chat_id}`).once('value');
 
@@ -85,6 +85,10 @@ exports.addMessage = functions.https.onRequest((req, res) => {
                 // its a image
                 return null;
               }
+console.log("text before" + text);
+              text = text.replace(snapshot.val().id, "");
+console.log("text after" + text);
+console.log("user id : " + snapshot.val().id );
               const small_text = text ? (text.length <= 100 ? text : text.substring(0, 97) + '...') : '' ;
               const payload = {
                 data: {
